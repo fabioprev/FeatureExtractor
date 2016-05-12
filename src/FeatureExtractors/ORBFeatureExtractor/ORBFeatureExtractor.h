@@ -31,9 +31,9 @@ namespace FeatureExtractors
 			/**
 			 * @brief Function that starts the extraction of the keypoints and of the descriptors of the image given as input.
 			 * 
-			 * @param filename name of the image to be read.
+			 * @param image reference to the image.
 			 */
-			void exec(const std::string& filename);
+			void exec(cv::Mat& image);
 			
 			/**
 			 * @brief Function that returns the descriptors of the image given the keypoints.
@@ -53,6 +53,13 @@ namespace FeatureExtractors
 			 */
 			cv::Mat extractKeyPoints(const cv::Mat& image);
 			
+			/**
+			 * @brief Function that extracts frames of all gif images in the directory given as input.
+			 * 
+			 * @param directory name of the directory which contains the images to be analysed.
+			 */
+			void extractFramesFromGif(const std::string& directory);
+			
 		public:
 			/**
 			 * @brief Empty constructor.
@@ -65,8 +72,10 @@ namespace FeatureExtractors
 			~ORBFeatureExtractor();
 			
 			/**
-			 * @brief Function that starts the extraction of the keypoints and of the descriptors of a set of images.
+			 * @brief Function that starts the extraction of the keypoints and of the descriptors of the image contained (recursively) in the directory given as input.
+			 * 
+			 * @param directory name of the directory which contains the images to be analysed.
 			 */
-			void exec();
+			void exec(const std::string& directory);
 	};
 }
