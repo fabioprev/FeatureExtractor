@@ -81,7 +81,7 @@ namespace FeatureExtractors
 			if ((stat((it->substr(0,it->rfind("/")) + string("/sections")).c_str(),&status) == 0) && S_ISDIR(status.st_mode)) exists = true;
 			
 			INFO("Extracting frames from '");
-			WARN("cd " << it->substr(0,it->rfind("/")) << " && " << (!exists ? "mkdir sections && " : "") << "cd sections && convert " << *it << " -coalesce section_%03d.png");
+			WARN(*it);
 			INFO("'...");
 			
 			if (system((string("cd ") + it->substr(0,it->rfind("/")) + string(" && ") + (!exists ? string("mkdir sections && ") : string("")) + string("cd sections && convert ") + *it + string(" -coalesce section_%03d.png")).c_str()));
