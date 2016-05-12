@@ -1,3 +1,14 @@
+# QtCreator files
+FeatureExtractor.config
+FeatureExtractor.creator
+FeatureExtractor.creator.user
+FeatureExtractor.files
+FeatureExtractor.includes
+
+# Building folder
+bin
+build
+
 # Compiled Object files
 *.slo
 *.lo
