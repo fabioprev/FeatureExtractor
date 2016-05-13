@@ -21,11 +21,26 @@ namespace FeatureExtractors
 	void ORBFeatureExtractor::checker()
 	{
 		ifstream runningInstancesFile;
-		int ret, runningInstances;
+		int numberOfCores = 1, ret, runningInstances;
 		char buffer[128];
 		
 		/// Waiting that 'convert' instances will start running.
 		usleep(2e6);
+		
+		if (system("nproc > .temp"));
+		
+		runningInstancesFile.open(".temp");
+		
+		while (runningInstancesFile.good())
+		{
+			if (runningInstancesFile.eof()) break;
+			
+			runningInstancesFile.getline(buffer,128);
+			
+			numberOfCores = atoi(buffer);
+			
+			break;
+		}
 		
 		while (isExtracting)
 		{
@@ -41,12 +56,12 @@ namespace FeatureExtractors
 				
 				runningInstances = atoi(buffer);
 				
-				if (runningInstances < 8)
+				if (runningInstances < numberOfCores)
 				{
 					struct sembuf oper;
 					
 					oper.sem_num = 0;
-					oper.sem_op = 8 - runningInstances;
+					oper.sem_op = numberOfCores - runningInstances;
 					oper.sem_flg = 0;
 					
 					ret = semop(semaphoreId,&oper,1);
