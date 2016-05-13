@@ -29,6 +29,35 @@ namespace FeatureExtractors
 			cv::OrbFeatureDetector featureDetector;
 			
 			/**
+			 * @brief semaphore used to safely run multiple instances of 'convert'.
+			 */
+			long semaphoreId;
+			
+			/**
+			 * @brief \b true means that the gif extraction is running, \b false otherwise.
+			 */
+			bool isExtracting;
+			
+			/**
+			 * @brief Function that invokes a thread-function that checks the number of running instances of 'convert'.
+			 * 
+			 * @param orbFeatureDetector pointer to the invocation object.
+			 * 
+			 * @return 0 if succeeded, -1 otherwise.
+			 */
+			static void* checkerThread(ORBFeatureExtractor* orbFeatureExtractor) { orbFeatureExtractor->checker(); return 0; }
+			
+			/**
+			 * @brief Function that checks the number of running instances of 'convert'.
+			 */
+			void checker();
+			
+			/**
+			 * @brief Function that creates a semaphore.
+			 */
+			void createSemaphore();
+			
+			/**
 			 * @brief Function that starts the extraction of the keypoints and of the descriptors of the image given as input.
 			 * 
 			 * @param image reference to the image.

@@ -83,4 +83,4 @@ file(GLOB_RECURSE FeatureExtractor_src "FeatureExtractors/*.cpp")
 
 # FeatureExtractor executable
 add_executable(FeatureExtractor ${FeatureExtractor_src})
-target_link_libraries(FeatureExtractor ${OpenCV_LIBS})
+target_link_libraries(FeatureExtractor pthread ${OpenCV_LIBS})
