@@ -54,6 +54,8 @@ add_definitions(-Wunused-label)
 add_definitions(-Wunused-value)
 add_definitions(-Wunused-variable)
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+
 if (CMAKE_BUILD_TYPE STREQUAL "DEBUG")
 	add_definitions(-ggdb)
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -frounding-math")

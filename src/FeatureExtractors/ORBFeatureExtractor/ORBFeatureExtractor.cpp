@@ -24,7 +24,7 @@ namespace FeatureExtractors
 		int numberOfCores = 1, ret, runningInstances;
 		char buffer[128];
 		
-		/// Waiting that 'convert' instances will start running.
+		/// Waiting 'convert' instances start running.
 		usleep(2e6);
 		
 		if (system("nproc > .temp"));
@@ -41,6 +41,8 @@ namespace FeatureExtractors
 			
 			break;
 		}
+		
+		mutex.lock();
 		
 		while (isExtracting)
 		{
@@ -81,6 +83,8 @@ namespace FeatureExtractors
 			
 			usleep(500e3);
 		}
+		
+		mutex.unlock();
 	}
 	
 	void ORBFeatureExtractor::createSemaphore()
@@ -113,6 +117,10 @@ namespace FeatureExtractors
 		int counter;
 		
 		const vector<string>& images = extractFramesFromGif(directory);
+		
+		/// Synchronising with gif thread checker. This code must be executed only when the thread has finished is execution.
+		mutex.lock();
+		mutex.unlock();
 		
 		sections.push_back("section_107.png");
 		sections.push_back("section_127.png");

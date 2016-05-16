@@ -2,6 +2,7 @@
 
 #include <opencv2/opencv.hpp>
 #include <opencv2/features2d/features2d.hpp>
+#include <mutex>
 
 namespace FeatureExtractors
 {
@@ -27,6 +28,11 @@ namespace FeatureExtractors
 			 * @brief feature extractor based on ORB.
 			 */
 			cv::OrbFeatureDetector featureDetector;
+			
+			/**
+			 * @brief mutex to synchronise gif extraction and descriptor generation.
+			 */
+			std::mutex mutex;
 			
 			/**
 			 * @brief semaphore used to safely run multiple instances of 'convert'.
