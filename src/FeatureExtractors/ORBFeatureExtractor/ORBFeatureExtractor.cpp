@@ -109,18 +109,57 @@ namespace FeatureExtractors
 	
 	void ORBFeatureExtractor::exec(const string& directory)
 	{
-		extractFramesFromGif(directory);
+		vector<string> sections;
+		int counter;
+		
+		const vector<string>& images = extractFramesFromGif(directory);
+		
+		sections.push_back("section_107.png");
+		sections.push_back("section_127.png");
+		sections.push_back("section_147.png");
+		
+		counter = 0;
+		
+		for (vector<string>::const_iterator it = images.begin(); it != images.end(); ++it)
+		{
+			stringstream s;
+			string patientPath;
+			
+			patientPath = it->substr(0,it->rfind("/")) + string("/sections/");
+			
+			if (system((string("rm -rf ") + patientPath + string("../features")).c_str()));
+			
+			if (system((string("mkdir -p ") + patientPath + string("../features/keypoints")).c_str()));
+			if (system((string("mkdir -p ") + patientPath + string("../features/descriptors")).c_str()));
+			
+			s << setw(3) << setfill(' ') << Utils::roundN(counter++ / (float) images.size() * 100,0);
+			
+			ERR("[" << s.str() << "%] ");
+			INFO("Generating features of '");
+			WARN(it->substr(0,it->rfind("/")));
+			INFO("'...");
+			
+			for (vector<string>::const_iterator it2 = sections.begin(); it2 != sections.end(); ++it2)
+			{
+				const Mat& image = imread(patientPath + *it2);
+				
+				if (!image.empty()) exec(image,patientPath,*it2);
+			}
+			
+			INFO("done!" << endl);
+		}
 	}
 	
-	void ORBFeatureExtractor::exec(Mat& image)
+	void ORBFeatureExtractor::exec(const Mat& image, const string& outputDirectory, const string& section)
 	{
 		const Mat& keypointsImage = extractKeyPoints(image);
 		const Mat& descriptorsImage = extractDetectors(image);
 		
-		imshow("Key points",keypointsImage);
-		imshow("Descriptors",descriptorsImage);
-		
-		waitKey(0);
+		if (!keypointsImage.empty() && !descriptorsImage.empty())
+		{
+			imwrite(outputDirectory + string("../features/keypoints/keypoint_") + section,keypointsImage);
+			imwrite(outputDirectory + string("../features/descriptors/descriptor_") + section,descriptorsImage);
+		}
 	}
 	
 	Mat ORBFeatureExtractor::extractDetectors(const Mat& image)
@@ -143,7 +182,7 @@ namespace FeatureExtractors
 		return keypointsImage;
 	}
 	
-	void ORBFeatureExtractor::extractFramesFromGif(const string& directory)
+	vector<string> ORBFeatureExtractor::extractFramesFromGif(const string& directory)
 	{
 		vector<string> images;
 		pthread_t threadId;
@@ -203,7 +242,7 @@ namespace FeatureExtractors
 				WARN("An error occured when calling semop. I am not exiting though..." << endl);
 			}
 			
-			s << setw(3) << setfill(' ') << Utils::roundN(counter++ / (float )images.size() * 100,0);
+			s << setw(3) << setfill(' ') << Utils::roundN(counter++ / (float) images.size() * 100,0);
 			
 			ERR("[" << s.str() << "%] ");
 			INFO("Extracting frames from '");
@@ -218,5 +257,7 @@ namespace FeatureExtractors
 		}
 		
 		isExtracting = false;
+		
+		return images;
 	}
 }

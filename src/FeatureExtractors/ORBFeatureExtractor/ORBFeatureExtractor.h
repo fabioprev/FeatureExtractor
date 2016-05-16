@@ -61,8 +61,10 @@ namespace FeatureExtractors
 			 * @brief Function that starts the extraction of the keypoints and of the descriptors of the image given as input.
 			 * 
 			 * @param image reference to the image.
+			 * @param outputDirectory name of the directory where generated images will be saved.
+			 * @param section number of the section of the patient.
 			 */
-			void exec(cv::Mat& image);
+			void exec(const cv::Mat& image, const std::string& outputDirectory, const std::string& section);
 			
 			/**
 			 * @brief Function that returns the descriptors of the image given the keypoints.
@@ -86,8 +88,10 @@ namespace FeatureExtractors
 			 * @brief Function that extracts frames of all gif images in the directory given as input.
 			 * 
 			 * @param directory name of the directory which contains the images to be analysed.
+			 * 
+			 * @return a vector containing all gif images in the directory given as input.
 			 */
-			void extractFramesFromGif(const std::string& directory);
+			std::vector<std::string> extractFramesFromGif(const std::string& directory);
 			
 		public:
 			/**
