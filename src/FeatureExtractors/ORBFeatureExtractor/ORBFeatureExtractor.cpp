@@ -135,8 +135,6 @@ namespace FeatureExtractors
 			
 			patientPath = it->substr(0,it->rfind("/")) + string("/sections/");
 			
-			if (system((string("rm -rf ") + patientPath + string("../features")).c_str()));
-			
 			if (system((string("mkdir -p ") + patientPath + string("../features/keypoints")).c_str()));
 			if (system((string("mkdir -p ") + patientPath + string("../features/descriptors")).c_str()));
 			
@@ -160,8 +158,19 @@ namespace FeatureExtractors
 	
 	void ORBFeatureExtractor::exec(const Mat& image, const string& outputDirectory, const string& section)
 	{
-		const Mat& keypointsImage = extractKeyPoints(image);
-		const Mat& descriptorsImage = extractDetectors(image);
+		struct stat status;
+		
+		Mat descriptorsImage, keypointsImage;
+		
+		if ((stat((outputDirectory + string("../features/keypoints/keypoint_") + section).c_str(),&status) != 0) || !S_ISREG(status.st_mode))
+		{
+			keypointsImage = extractKeyPoints(image);
+		}
+		
+		if ((stat((outputDirectory + string("../features/descriptors/descriptor_") + section).c_str(),&status) != 0) || !S_ISREG(status.st_mode))
+		{
+			descriptorsImage = extractDetectors(image);
+		}
 		
 		if (!keypointsImage.empty() && !descriptorsImage.empty())
 		{
