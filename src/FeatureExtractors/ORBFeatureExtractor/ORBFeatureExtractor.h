@@ -15,6 +15,11 @@ namespace FeatureExtractors
 	{
 		private:
 			/**
+			 * @brief maximum number of features for a descriptor of an image.
+			 */
+			static const int MAXIMUM_NUMBER_OF_FEATURES = 150;
+			
+			/**
 			 * @brief vector of keypoints found in the image.
 			 */
 			std::vector<cv::KeyPoint> keypoints;

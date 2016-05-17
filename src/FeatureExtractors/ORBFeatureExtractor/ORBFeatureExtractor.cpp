@@ -194,9 +194,13 @@ namespace FeatureExtractors
 	{
 		featureDetector.detect(image,keypoints);
 		
+		sort(keypoints.begin(),keypoints.end(),Utils::compareKeyPoint);
+		
+		if (keypoints.size() > MAXIMUM_NUMBER_OF_FEATURES) keypoints.erase(keypoints.begin() + MAXIMUM_NUMBER_OF_FEATURES,keypoints.end());
+		
 		Mat keypointsImage;
 		
-		drawKeypoints(image,keypoints,keypointsImage,Scalar::all(255));
+		drawKeypoints(image,keypoints,keypointsImage,Scalar::all(255),DrawMatchesFlags::DEFAULT);
 		
 		return keypointsImage;
 	}
