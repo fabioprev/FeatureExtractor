@@ -44,6 +44,8 @@ namespace FeatureExtractors
 		
 		mutex.lock();
 		
+		runningInstances = 0;
+		
 		while (isExtracting)
 		{
 			if (system("ps -A | grep convert | wc -l > .temp"));
@@ -82,6 +84,30 @@ namespace FeatureExtractors
 			if (system("rm -rf .temp"));
 			
 			usleep(500e3);
+		}
+		
+		while (runningInstances > 0)
+		{
+			if (system("ps -A | grep convert | wc -l > .temp"));
+			
+			runningInstancesFile.open(".temp");
+			
+			while (runningInstancesFile.good())
+			{
+				if (runningInstancesFile.eof()) break;
+				
+				runningInstancesFile.getline(buffer,128);
+				
+				runningInstances = atoi(buffer);
+				
+				break;
+			}
+			
+			runningInstancesFile.close();
+			
+			if (system("rm -rf .temp"));
+			
+			usleep(100e3);
 		}
 		
 		mutex.unlock();
