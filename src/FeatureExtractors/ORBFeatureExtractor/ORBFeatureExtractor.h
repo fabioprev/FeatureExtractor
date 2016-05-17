@@ -99,6 +99,14 @@ namespace FeatureExtractors
 			 */
 			std::vector<std::string> extractFramesFromGif(const std::string& directory);
 			
+			/**
+			 * @brief Function that writes the CSV file associated to the image given as input.
+			 * 
+			 * @param image reference to the image.
+			 * @param filename name of the output file.
+			 */
+			void writeCSV(const cv::Mat& image, const std::string& filename);
+			
 		public:
 			/**
 			 * @brief Empty constructor.

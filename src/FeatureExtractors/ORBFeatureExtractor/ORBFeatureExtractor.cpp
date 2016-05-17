@@ -176,6 +176,8 @@ namespace FeatureExtractors
 		{
 			imwrite(outputDirectory + string("../features/keypoints/keypoint_") + section,keypointsImage);
 			imwrite(outputDirectory + string("../features/descriptors/descriptor_") + section,descriptorsImage);
+			
+			writeCSV(descriptorsImage,outputDirectory + string("../features/descriptors/descriptor_") + section.substr(0,section.find(".png")));
 		}
 	}
 	
@@ -276,5 +278,28 @@ namespace FeatureExtractors
 		isExtracting = false;
 		
 		return images;
+	}
+	
+	void ORBFeatureExtractor::writeCSV(const Mat& image, const string& filename)
+	{
+		ofstream file;
+		
+		file.open((filename + string(".csv")).c_str());
+		
+		for (int i = 0; i < image.rows; ++i)
+		{
+			for (int j = 0; j < image.cols; ++j)
+			{
+				file << (int) image.at<uchar>(i,j);
+				
+				if ((i == (image.rows - 1)) && (j == (image.cols - 1))) continue;
+				
+				file << ",";
+			}
+		}
+		
+		file << endl;
+		
+		file.close();
 	}
 }
