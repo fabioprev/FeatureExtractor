@@ -142,7 +142,9 @@ namespace FeatureExtractors
 		vector<string> sections;
 		int counter;
 		
+#if 0
 		const vector<string>& images = extractFramesFromGif(directory);
+#endif
 		
 		/// Synchronising with gif thread checker. This code must be executed only when the thread has finished is execution.
 		mutex.lock();
@@ -154,6 +156,7 @@ namespace FeatureExtractors
 		
 		counter = 0;
 		
+#if 0
 		for (vector<string>::const_iterator it = images.begin(); it != images.end(); ++it)
 		{
 			stringstream s;
@@ -180,6 +183,9 @@ namespace FeatureExtractors
 			
 			INFO("done!" << endl);
 		}
+#endif
+		
+		writeJointCSV(directory,sections);
 	}
 	
 	void ORBFeatureExtractor::exec(const Mat& image, const string& outputDirectory, const string& section)
@@ -331,5 +337,67 @@ namespace FeatureExtractors
 		file << endl;
 		
 		file.close();
+	}
+	
+	void ORBFeatureExtractor::writeJointCSV(const string& directory, const vector<string>& sections)
+	{
+		vector<string> classes, xmlFiles;
+		ifstream file;
+		string temp, temp2;
+		char buffer[4096];
+		
+		classes.push_back("AD");
+		/*classes.push_back("LMCI");
+		classes.push_back("MCI");
+		classes.push_back("Normal");*/
+		
+		for (vector<string>::const_iterator it = classes.begin(); it != classes.end(); ++it)
+		{
+			if (system((string("ls ") + directory + ((directory.at(directory.size() - 1) == '/') ? string("") : string("/")) + *it + string("/*.xml > .temp")).c_str()));
+			
+			file.open(".temp");
+			
+			while (file.good())
+			{
+				if (file.eof()) break;
+				
+				file.getline(buffer,4096);
+				
+				if (strlen(buffer) > 0) xmlFiles.push_back(buffer);
+			}
+			
+			file.close();
+			
+			if (system("rm -rf .temp"));
+			
+			for (vector<string>::const_iterator it2 = xmlFiles.begin(); it2 != xmlFiles.end(); ++it2)
+			{
+				temp = it2->substr(it2->rfind("/") + 1);
+				
+				cerr << "Step I: " << temp << endl;
+				
+				temp = temp.substr(temp.find("_") + 1);
+				
+				cerr << "Step II: " << temp << endl;
+				
+				temp = temp.substr(0,temp.rfind("_"));
+				
+				cerr << "Step III: " << temp << endl;
+				
+				string::size_type i = temp.find("_");
+				
+				for (int j = 0; (j < 2) && (i != string::npos); ++j) i = temp.find("_",i + 1);
+				
+				temp2 = temp.substr(0,i) + "/" + temp.substr(i+1);
+				
+				temp = temp2.substr(0,temp2.rfind("_")) + "/" + temp2.substr(temp2.rfind("_") + 1);
+				
+				cerr << "I: " << i << endl;
+				cerr << "temp 2: " << temp2 << endl;
+				cerr << "temp: " << temp << endl;
+				
+				exit(0);
+			}
+		}
 	}
 }
