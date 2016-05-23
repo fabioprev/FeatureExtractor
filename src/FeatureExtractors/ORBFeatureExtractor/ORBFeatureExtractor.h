@@ -17,7 +17,7 @@ namespace FeatureExtractors
 			/**
 			 * @brief maximum number of features for a descriptor of an image.
 			 */
-			static const int MAXIMUM_NUMBER_OF_FEATURES = 150;
+			static const int MAXIMUM_NUMBER_OF_FEATURES = 100;
 			
 			/**
 			 * @brief vector of keypoints found in the image.

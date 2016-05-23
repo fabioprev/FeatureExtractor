@@ -148,9 +148,9 @@ namespace FeatureExtractors
 		mutex.lock();
 		mutex.unlock();
 		
-		sections.push_back("section_107.png");
+		//sections.push_back("section_107.png");
 		sections.push_back("section_127.png");
-		sections.push_back("section_147.png");
+		//sections.push_back("section_147.png");
 		
 		counter = 0;
 		
