@@ -142,9 +142,7 @@ namespace FeatureExtractors
 		vector<string> sections;
 		int counter;
 		
-#if 0
 		const vector<string>& images = extractFramesFromGif(directory);
-#endif
 		
 		/// Synchronising with gif thread checker. This code must be executed only when the thread has finished is execution.
 		mutex.lock();
@@ -156,7 +154,6 @@ namespace FeatureExtractors
 		
 		counter = 0;
 		
-#if 0
 		for (vector<string>::const_iterator it = images.begin(); it != images.end(); ++it)
 		{
 			stringstream s;
@@ -183,7 +180,6 @@ namespace FeatureExtractors
 			
 			INFO("done!" << endl);
 		}
-#endif
 		
 		writeJointCSV(directory,sections);
 	}
