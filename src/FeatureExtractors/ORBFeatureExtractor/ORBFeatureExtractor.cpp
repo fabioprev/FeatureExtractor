@@ -341,18 +341,24 @@ namespace FeatureExtractors
 	
 	void ORBFeatureExtractor::writeJointCSV(const string& directory, const vector<string>& sections)
 	{
-		vector<string> classes, xmlFiles;
+		vector<string> classes, csvFiles, xmlFiles;
+		ofstream patientsFile;
 		ifstream file;
-		string temp, temp2;
-		char buffer[4096];
+		string date, oldPatient, patient, period, temp, temp2;
+		int counter;
+		char buffer[65536];
 		
 		classes.push_back("AD");
-		/*classes.push_back("LMCI");
+		classes.push_back("LMCI");
 		classes.push_back("MCI");
-		classes.push_back("Normal");*/
+		classes.push_back("Normal");
 		
 		for (vector<string>::const_iterator it = classes.begin(); it != classes.end(); ++it)
 		{
+			xmlFiles.clear();
+			
+			if (system((string("rm -rf ") + directory + ((directory.at(directory.size() - 1) == '/') ? string("") : string("/")) + *it + string("_*")).c_str()));
+			
 			if (system((string("ls ") + directory + ((directory.at(directory.size() - 1) == '/') ? string("") : string("/")) + *it + string("/*.xml > .temp")).c_str()));
 			
 			file.open(".temp");
@@ -361,7 +367,7 @@ namespace FeatureExtractors
 			{
 				if (file.eof()) break;
 				
-				file.getline(buffer,4096);
+				file.getline(buffer,65536);
 				
 				if (strlen(buffer) > 0) xmlFiles.push_back(buffer);
 			}
@@ -370,19 +376,71 @@ namespace FeatureExtractors
 			
 			if (system("rm -rf .temp"));
 			
-			for (vector<string>::const_iterator it2 = xmlFiles.begin(); it2 != xmlFiles.end(); ++it2)
+			counter = 0;
+			
+			INFO("Generating matrices for class: ");
+			WARN(*it << endl);
+			
+			for (vector<string>::const_iterator it2 = xmlFiles.begin(); it2 != xmlFiles.end(); ++it2, ++counter)
 			{
+				if ((counter % (xmlFiles.size() / 10)) == 0)
+				{
+					if (ceil(counter + (xmlFiles.size() / 10)) > xmlFiles.size()) ERR("100% done." << endl)
+					else ERR(ceil(counter * 100.0 / xmlFiles.size()) << "% done." << endl)
+				}
+				
+				if (system((string("cat ") + *it2 + string(" | grep dateAcquired > .temp")).c_str()));
+				
+				file.open(".temp");
+				
+				while (file.good())
+				{
+					if (file.eof()) break;
+					
+					file.getline(buffer,65536);
+					
+					temp = buffer;
+					
+					break;
+				}
+				
+				file.close();
+				
+				if (system("rm -rf .temp"));
+				
+				date = (temp.substr(temp.find(">") + 1)).substr(0,(temp.substr(temp.find(">") + 1)).rfind("<"));
+				
+				replace(date.begin(),date.end(),' ','_');
+				replace(date.begin(),date.end(),':','_');
+				
+				if (system((string("cat ") + *it2 + string(" | grep visitIdentifier > .temp")).c_str()));
+				
+				file.open(".temp");
+				
+				while (file.good())
+				{
+					if (file.eof()) break;
+					
+					file.getline(buffer,65536);
+					
+					temp = buffer;
+					
+					break;
+				}
+				
+				file.close();
+				
+				if (system("rm -rf .temp"));
+				
+				period = (temp.substr(temp.find(">") + 1)).substr(0,(temp.substr(temp.find(">") + 1)).rfind("<"));
+				
+				if (period.find("Month") == string::npos) continue;
+				
+				period = period.substr(period.rfind(" ") + 1);
+				
 				temp = it2->substr(it2->rfind("/") + 1);
-				
-				cerr << "Step I: " << temp << endl;
-				
 				temp = temp.substr(temp.find("_") + 1);
-				
-				cerr << "Step II: " << temp << endl;
-				
 				temp = temp.substr(0,temp.rfind("_"));
-				
-				cerr << "Step III: " << temp << endl;
 				
 				string::size_type i = temp.find("_");
 				
@@ -390,13 +448,95 @@ namespace FeatureExtractors
 				
 				temp2 = temp.substr(0,i) + "/" + temp.substr(i+1);
 				
-				temp = temp2.substr(0,temp2.rfind("_")) + "/" + temp2.substr(temp2.rfind("_") + 1);
+				for (vector<string>::const_iterator it3 = sections.begin(); it3 != sections.end(); ++it3)
+				{
+					temp = directory + ((directory.at(directory.size() - 1) == '/') ? "" : "/") + *it + "/" + temp2.substr(0,temp2.rfind("_")) + "/" + date + "/" + temp2.substr(temp2.rfind("_") + 1) +
+						   "/features/descriptors/descriptor_" + *it3;
+					
+					const Mat& image = imread(temp);
+					
+					if (image.rows < MAXIMUM_NUMBER_OF_FEATURES) continue;
+					
+					file.open((temp.substr(0,temp.rfind("png")) + string("csv")).c_str());
+					
+					while (file.good())
+					{
+						if (file.eof()) break;
+						
+						file.getline(buffer,65536);
+						
+						temp = buffer;
+						
+						break;
+					}
+					
+					file.close();
+					
+					patient = (temp2.substr(0,temp2.rfind("_"))).substr(0,temp2.substr(0,temp2.rfind("_")).rfind("/"));
+					
+					patientsFile.open((directory + *it + string("_") + period + string("_") + it3->substr(0,it3->rfind("png")) + string("csv")).c_str(),ios_base::app);
+					
+					patientsFile << patient << "," << temp << "," << *it << endl;
+					
+					patientsFile.close();
+				}
+			}
+		}
+		
+		for (vector<string>::const_iterator it = classes.begin(); it != classes.end(); ++it)
+		{
+			csvFiles.clear();
+			
+			if (system((string("find ") + directory + ((directory.at(directory.size() - 1) == '/') ? string("") : string("/")) + string(" -mindepth 1 -maxdepth 1 -name ") + *it + string("_*csv > .temp")).c_str()));
+			
+			file.open(".temp");
+			
+			while (file.good())
+			{
+				if (file.eof()) break;
 				
-				cerr << "I: " << i << endl;
-				cerr << "temp 2: " << temp2 << endl;
-				cerr << "temp: " << temp << endl;
+				file.getline(buffer,65536);
 				
-				exit(0);
+				if (strlen(buffer) > 0) csvFiles.push_back(buffer);
+			}
+			
+			file.close();
+			
+			if (system("rm -rf .temp"));
+			
+			for (vector<string>::const_iterator it2 = csvFiles.begin(); it2 != csvFiles.end(); ++it2)
+			{
+				patientsFile.open((*it2 + string(".new")).c_str());
+				
+				file.open((*it2).c_str());
+				
+				oldPatient = "";
+				patient = "";
+				
+				while (file.good())
+				{
+					if (file.eof()) break;
+					
+					file.getline(buffer,65536);
+					
+					if (strlen(buffer) == 0) break;
+					
+					patient = buffer;
+					
+					if (oldPatient != patient)
+					{
+						oldPatient = patient;
+						
+						patientsFile << patient << endl;
+					}
+				}
+				
+				file.close();
+				
+				patientsFile.close();
+				
+				if (system((string("rm -rf ") + *it2).c_str()));
+				if (system((string("mv ") + *it2 + string(".new ") + *it2).c_str()));
 			}
 		}
 	}
