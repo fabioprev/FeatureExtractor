@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Utils/Utils.h>
 #include <opencv2/opencv.hpp>
 #include <opencv2/features2d/features2d.hpp>
 #include <mutex>
@@ -15,9 +16,19 @@ namespace FeatureExtractors
 	{
 		private:
 			/**
+			 * @brief number of horizontal bins to build the feature histogram.
+			 */
+			static const int HISTOGRAM_HORIZONTAL_BINS = 15;
+			
+			/**
+			 * @brief number of vertical bins to build the feature histogram.
+			 */
+			static const int HISTOGRAM_VERTICAL_BINS = 16;
+			
+			/**
 			 * @brief maximum number of features for a descriptor of an image.
 			 */
-			static const int MAXIMUM_NUMBER_OF_FEATURES = 100;
+			static const int MAXIMUM_NUMBER_OF_FEATURES = 50;
 			
 			/**
 			 * @brief vector of keypoints found in the image.
@@ -43,6 +54,11 @@ namespace FeatureExtractors
 			 * @brief semaphore used to safely run multiple instances of 'convert'.
 			 */
 			long semaphoreId;
+			
+			/**
+			 * @brief strategy used to generate the CSV files.
+			 */
+			Utils::CSVGenerationStrategy strategy;
 			
 			/**
 			 * @brief \b true means that the gif extraction is running, \b false otherwise.
@@ -108,9 +124,10 @@ namespace FeatureExtractors
 			 * @brief Function that writes the CSV file associated to the image given as input.
 			 * 
 			 * @param image reference to the image.
+			 * @param descriptorsImage reference to the descriptor image.
 			 * @param filename name of the output file.
 			 */
-			void writeCSV(const cv::Mat& image, const std::string& filename);
+			void writeCSV(const cv::Mat& image, const cv::Mat& descriptorsImage, const std::string& filename);
 			
 			/**
 			 * @brief Function that writes the joint CSV file for each Alzheimer's class.

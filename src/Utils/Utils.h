@@ -12,6 +12,16 @@ class Utils
 {
 	public:
 		/**
+		 * @brief Enumerator representing all the possible strategy to generate the CSV file.
+		 */
+		enum CSVGenerationStrategy
+		{
+			ImageDescriptors = 0,
+			Histograms,
+			ImageDescriptorsAndHistograms
+		};
+		
+		/**
 		 * @brief Function that compares two keypoints.
 		 * 
 		 * @param i reference to the first keypoint to be compared.

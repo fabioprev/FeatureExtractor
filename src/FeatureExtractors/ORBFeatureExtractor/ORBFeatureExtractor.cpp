@@ -14,7 +14,7 @@ using namespace cv;
 
 namespace FeatureExtractors
 {
-	ORBFeatureExtractor::ORBFeatureExtractor() : isExtracting(false) {;}
+	ORBFeatureExtractor::ORBFeatureExtractor() : strategy(Utils::Histograms), isExtracting(false) {;}
 	
 	ORBFeatureExtractor::~ORBFeatureExtractor() {;}
 	
@@ -148,9 +148,9 @@ namespace FeatureExtractors
 		mutex.lock();
 		mutex.unlock();
 		
-		//sections.push_back("section_107.png");
+		sections.push_back("section_107.png");
 		sections.push_back("section_127.png");
-		//sections.push_back("section_147.png");
+		sections.push_back("section_147.png");
 		
 		counter = 0;
 		
@@ -189,13 +189,20 @@ namespace FeatureExtractors
 		struct stat status;
 		
 		Mat descriptorsImage, keypointsImage;
+		bool isFeaturesGenerationNeeded;
 		
-		if ((stat((outputDirectory + string("../features/keypoints/keypoint_") + section).c_str(),&status) != 0) || !S_ISREG(status.st_mode))
+		const Mat& descriptor = imread(outputDirectory + string("../features/descriptors/descriptor_") + section);
+		
+		/// Checking whether the current maximum number of features is different with respect to the one used to generate the feature's images, if any.
+		if (!descriptor.empty() && descriptor.rows != MAXIMUM_NUMBER_OF_FEATURES) isFeaturesGenerationNeeded = true;
+		else isFeaturesGenerationNeeded = false;
+		
+		if (isFeaturesGenerationNeeded || (stat((outputDirectory + string("../features/keypoints/keypoint_") + section).c_str(),&status) != 0) || !S_ISREG(status.st_mode))
 		{
 			keypointsImage = extractKeyPoints(image);
 		}
 		
-		if ((stat((outputDirectory + string("../features/descriptors/descriptor_") + section).c_str(),&status) != 0) || !S_ISREG(status.st_mode))
+		if (isFeaturesGenerationNeeded || (stat((outputDirectory + string("../features/descriptors/descriptor_") + section).c_str(),&status) != 0) || !S_ISREG(status.st_mode))
 		{
 			descriptorsImage = extractDetectors(image);
 		}
@@ -205,7 +212,7 @@ namespace FeatureExtractors
 			imwrite(outputDirectory + string("../features/keypoints/keypoint_") + section,keypointsImage);
 			imwrite(outputDirectory + string("../features/descriptors/descriptor_") + section,descriptorsImage);
 			
-			writeCSV(descriptorsImage,outputDirectory + string("../features/descriptors/descriptor_") + section.substr(0,section.find(".png")));
+			writeCSV(image,descriptorsImage,outputDirectory + string("../features/descriptors/descriptor_") + section.substr(0,section.find(".png")));
 		}
 	}
 	
@@ -278,6 +285,7 @@ namespace FeatureExtractors
 			stringstream s;
 			struct stat status;
 			
+			/// Sections have been already generated.
 			if ((stat((it->substr(0,it->rfind("/")) + string("/sections")).c_str(),&status) == 0) && S_ISDIR(status.st_mode)) continue;
 			
 			struct sembuf oper;
@@ -312,22 +320,56 @@ namespace FeatureExtractors
 		return images;
 	}
 	
-	void ORBFeatureExtractor::writeCSV(const Mat& image, const string& filename)
+	void ORBFeatureExtractor::writeCSV(const Mat& image, const Mat& descriptorsImage, const string& filename)
 	{
 		ofstream file;
 		
 		file.open((filename + string(".csv")).c_str());
 		
-		for (int i = 0; i < image.rows; ++i)
+		if (strategy == Utils::ImageDescriptors)
 		{
-			for (int j = 0; j < image.cols; ++j)
+			for (int i = 0; i < descriptorsImage.rows; ++i)
 			{
-				file << (int) image.at<uchar>(i,j);
-				
-				if ((i == (image.rows - 1)) && (j == (image.cols - 1))) continue;
-				
-				file << ",";
+				for (int j = 0; j < descriptorsImage.cols; ++j)
+				{
+					file << (int) descriptorsImage.at<uchar>(i,j);
+					
+					if ((i == (descriptorsImage.rows - 1)) && (j == (descriptorsImage.cols - 1))) continue;
+					
+					file << ",";
+				}
 			}
+		}
+		else if (strategy == Utils::Histograms)
+		{
+			int featureHistogram[HISTOGRAM_HORIZONTAL_BINS][HISTOGRAM_VERTICAL_BINS];
+			
+			/// Initializing the histogram's bins.
+			for (int i = 0; i < HISTOGRAM_HORIZONTAL_BINS; ++i)
+			{
+				for (int j = 0; j < HISTOGRAM_VERTICAL_BINS; ++j)
+				{
+					featureHistogram[i][j] = 0;
+				}
+			}
+			
+			for (vector<KeyPoint>::const_iterator it = keypoints.begin(); it != keypoints.end(); ++it)
+			{
+				++featureHistogram[(int) (it->pt.y / (image.rows / HISTOGRAM_HORIZONTAL_BINS))][(int) (it->pt.x / (image.cols / HISTOGRAM_VERTICAL_BINS))];
+			}
+			
+			for (int i = 0; i < HISTOGRAM_HORIZONTAL_BINS; ++i)
+			{
+				for (int j = 0; j < HISTOGRAM_VERTICAL_BINS; ++j)
+				{
+					file << featureHistogram[i][j];
+					
+					if ((i == (HISTOGRAM_HORIZONTAL_BINS - 1)) && (j == (HISTOGRAM_VERTICAL_BINS - 1))) continue;
+					
+					file << ",";
+				}
+			}
+			
 		}
 		
 		file << endl;
