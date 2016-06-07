@@ -18,12 +18,12 @@ namespace FeatureExtractors
 			/**
 			 * @brief number of horizontal bins to build the feature histogram.
 			 */
-			static const int HISTOGRAM_HORIZONTAL_BINS = 15;
+			static const int HISTOGRAM_HORIZONTAL_BINS = 4;
 			
 			/**
 			 * @brief number of vertical bins to build the feature histogram.
 			 */
-			static const int HISTOGRAM_VERTICAL_BINS = 16;
+			static const int HISTOGRAM_VERTICAL_BINS = 4;
 			
 			/**
 			 * @brief maximum number of features for a descriptor of an image.

@@ -326,7 +326,7 @@ namespace FeatureExtractors
 		
 		file.open((filename + string(".csv")).c_str());
 		
-		if (strategy == Utils::ImageDescriptors)
+		if ((strategy == Utils::ImageDescriptors) || (strategy == Utils::ImageDescriptorsAndHistograms))
 		{
 			for (int i = 0; i < descriptorsImage.rows; ++i)
 			{
@@ -334,13 +334,14 @@ namespace FeatureExtractors
 				{
 					file << (int) descriptorsImage.at<uchar>(i,j);
 					
-					if ((i == (descriptorsImage.rows - 1)) && (j == (descriptorsImage.cols - 1))) continue;
+					if ((strategy == Utils::ImageDescriptors) && (i == (descriptorsImage.rows - 1)) && (j == (descriptorsImage.cols - 1))) continue;
 					
 					file << ",";
 				}
 			}
 		}
-		else if (strategy == Utils::Histograms)
+		
+		if ((strategy == Utils::Histograms) || (strategy == Utils::ImageDescriptorsAndHistograms))
 		{
 			int featureHistogram[HISTOGRAM_HORIZONTAL_BINS][HISTOGRAM_VERTICAL_BINS];
 			
@@ -369,7 +370,6 @@ namespace FeatureExtractors
 					file << ",";
 				}
 			}
-			
 		}
 		
 		file << endl;
@@ -391,11 +391,13 @@ namespace FeatureExtractors
 		classes.push_back("MCI");
 		classes.push_back("Normal");
 		
+		if (system((string("rm -rf ") + directory + ((directory.at(directory.size() - 1) == '/') ? string("") : string("/")) + string("ClassPatientFiles")).c_str()));
+		
+		if (system((string("mkdir -p ") + directory + ((directory.at(directory.size() - 1) == '/') ? string("") : string("/")) + string("ClassPatientFiles")).c_str()));
+		
 		for (vector<string>::const_iterator it = classes.begin(); it != classes.end(); ++it)
 		{
 			xmlFiles.clear();
-			
-			if (system((string("rm -rf ") + directory + ((directory.at(directory.size() - 1) == '/') ? string("") : string("/")) + *it + string("_*")).c_str()));
 			
 			if (system((string("ls ") + directory + ((directory.at(directory.size() - 1) == '/') ? string("") : string("/")) + *it + string("/*.xml > .temp")).c_str()));
 			
@@ -512,7 +514,8 @@ namespace FeatureExtractors
 					
 					patient = (temp2.substr(0,temp2.rfind("_"))).substr(0,temp2.substr(0,temp2.rfind("_")).rfind("/"));
 					
-					patientsFile.open((directory + *it + string("_") + period + string("_") + it3->substr(0,it3->rfind("png")) + string("csv")).c_str(),ios_base::app);
+					patientsFile.open((directory + ((directory.at(directory.size() - 1) == '/') ? "" : "/") + string("ClassPatientFiles/") + *it + string("_") + period + string("_") + it3->substr(0,it3->rfind("png")) +
+									   string("csv")).c_str(),ios_base::app);
 					
 					patientsFile << patient << "," << temp << "," << *it << endl;
 					
@@ -525,7 +528,8 @@ namespace FeatureExtractors
 		{
 			csvFiles.clear();
 			
-			if (system((string("find ") + directory + ((directory.at(directory.size() - 1) == '/') ? string("") : string("/")) + string(" -mindepth 1 -maxdepth 1 -name ") + *it + string("_*csv > .temp")).c_str()));
+			if (system((string("find ") + directory + ((directory.at(directory.size() - 1) == '/') ? string("") : string("/")) + string("ClassPatientFiles/") + string(" -mindepth 1 -maxdepth 1 -name ") + *it +
+						string("_*csv > .temp")).c_str()));
 			
 			file.open(".temp");
 			
