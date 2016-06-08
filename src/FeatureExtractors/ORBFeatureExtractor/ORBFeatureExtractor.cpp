@@ -148,8 +148,8 @@ namespace FeatureExtractors
 		mutex.lock();
 		mutex.unlock();
 		
-		sections.push_back("section_107.png");
-		sections.push_back("section_127.png");
+		//sections.push_back("section_107.png");
+		//sections.push_back("section_127.png");
 		sections.push_back("section_147.png");
 		
 		counter = 0;
@@ -160,6 +160,9 @@ namespace FeatureExtractors
 			string patientPath;
 			
 			patientPath = it->substr(0,it->rfind("/")) + string("/sections/");
+			
+			if (system((string("rm -rf ") + patientPath + string("../features/keypoints")).c_str()));
+			if (system((string("rm -rf ") + patientPath + string("../features/descriptors")).c_str()));
 			
 			if (system((string("mkdir -p ") + patientPath + string("../features/keypoints")).c_str()));
 			if (system((string("mkdir -p ") + patientPath + string("../features/descriptors")).c_str()));
@@ -341,7 +344,7 @@ namespace FeatureExtractors
 			}
 		}
 		
-		if ((strategy == Utils::Histograms) || (strategy == Utils::ImageDescriptorsAndHistograms))
+		if ((strategy == Utils::Histograms) || (strategy == Utils::ImageDescriptorsAndHistograms) || (strategy == Utils::HistogramsAndHashCantor))
 		{
 			int featureHistogram[HISTOGRAM_HORIZONTAL_BINS][HISTOGRAM_VERTICAL_BINS];
 			
@@ -365,10 +368,22 @@ namespace FeatureExtractors
 				{
 					file << featureHistogram[i][j];
 					
-					if ((i == (HISTOGRAM_HORIZONTAL_BINS - 1)) && (j == (HISTOGRAM_VERTICAL_BINS - 1))) continue;
+					if (((strategy == Utils::Histograms) || (strategy == Utils::ImageDescriptorsAndHistograms)) && (i == (HISTOGRAM_HORIZONTAL_BINS - 1)) && (j == (HISTOGRAM_VERTICAL_BINS - 1))) continue;
 					
 					file << ",";
 				}
+			}
+		}
+		
+		if ((strategy == Utils::HashCantor) || (strategy == Utils::HistogramsAndHashCantor))
+		{
+			for (vector<KeyPoint>::const_iterator it = keypoints.begin(); it != keypoints.end(); ++it)
+			{
+				file << ((0.5 * (it->pt.x + it->pt.y) * (it->pt.x + it->pt.y + 1)) + it->pt.y);
+				
+				if ((it + 1) == keypoints.end()) continue;
+				
+				file << ",";
 			}
 		}
 		

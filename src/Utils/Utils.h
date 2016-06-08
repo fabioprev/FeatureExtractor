@@ -18,7 +18,9 @@ class Utils
 		{
 			ImageDescriptors = 0,
 			Histograms,
-			ImageDescriptorsAndHistograms
+			ImageDescriptorsAndHistograms,
+			HashCantor,
+			HistogramsAndHashCantor
 		};
 		
 		/**
