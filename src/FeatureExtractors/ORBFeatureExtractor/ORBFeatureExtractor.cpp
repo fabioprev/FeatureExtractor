@@ -404,7 +404,7 @@ namespace FeatureExtractors
 		classes.push_back("AD");
 		classes.push_back("LMCI");
 		classes.push_back("MCI");
-		classes.push_back("Normal");
+		classes.push_back("CN");
 		
 		if (system((string("rm -rf ") + directory + ((directory.at(directory.size() - 1) == '/') ? string("") : string("/")) + string("ClassPatientFiles")).c_str()));
 		
