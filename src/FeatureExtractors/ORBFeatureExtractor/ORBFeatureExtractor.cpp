@@ -311,7 +311,7 @@ namespace FeatureExtractors
 			WARN(*it);
 			INFO("'...");
 			
-			if (ret = system((string("cd ") + it->substr(0,it->rfind("/")) + string(" && mkdir sections && cd sections && convert ") + *it + string(" -coalesce section_%03d.png &")).c_str()));
+			if (ret = system((string("cd ") + it->substr(0,it->rfind("/")) + string(" && mkdir -p sections && cd sections && convert ") + *it + string(" -coalesce section_%03d.png &")).c_str()));
 			
 			if (ret != 0) break;
 			
