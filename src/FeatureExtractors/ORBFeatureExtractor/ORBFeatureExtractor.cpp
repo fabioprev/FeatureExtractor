@@ -235,6 +235,8 @@ namespace FeatureExtractors
 		
 		const vector<string>& images = extractFramesFromGif(directory);
 		
+		return;
+		
 		/// Synchronising with gif thread checker. This code must be executed only when the thread has finished is execution.
 		mutex.lock();
 		mutex.unlock();
@@ -376,7 +378,7 @@ namespace FeatureExtractors
 			struct stat status;
 			
 			/// Sections have been already generated.
-			if ((stat((it->substr(0,it->rfind("/")) + string("/sections")).c_str(),&status) == 0) && S_ISDIR(status.st_mode)) continue;
+			if ((strcasecmp(dataset.c_str(),"OASIS") != 0) && (stat((it->substr(0,it->rfind("/")) + string("/sections")).c_str(),&status) == 0) && S_ISDIR(status.st_mode)) continue;
 			
 			struct sembuf oper;
 			
