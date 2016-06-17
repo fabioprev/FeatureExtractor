@@ -329,7 +329,7 @@ namespace FeatureExtractors
 		
 		file.open((filename + string(".csv")).c_str());
 		
-		if ((strategy == Utils::ImageDescriptors) || (strategy == Utils::ImageDescriptorsAndHistograms))
+		if ((strategy == Utils::ImageDescriptor) || (strategy == Utils::ImageDescriptorAndHistograms))
 		{
 			for (int i = 0; i < descriptorsImage.rows; ++i)
 			{
@@ -337,14 +337,14 @@ namespace FeatureExtractors
 				{
 					file << (int) descriptorsImage.at<uchar>(i,j);
 					
-					if ((strategy == Utils::ImageDescriptors) && (i == (descriptorsImage.rows - 1)) && (j == (descriptorsImage.cols - 1))) continue;
+					if ((strategy == Utils::ImageDescriptor) && (i == (descriptorsImage.rows - 1)) && (j == (descriptorsImage.cols - 1))) continue;
 					
 					file << ",";
 				}
 			}
 		}
 		
-		if ((strategy == Utils::Histograms) || (strategy == Utils::ImageDescriptorsAndHistograms) || (strategy == Utils::HistogramsAndHashCantor))
+		if ((strategy == Utils::Histograms) || (strategy == Utils::ImageDescriptorAndHistograms) || (strategy == Utils::HistogramsAndHashCantor))
 		{
 			int featureHistogram[HISTOGRAM_HORIZONTAL_BINS][HISTOGRAM_VERTICAL_BINS];
 			
@@ -368,7 +368,7 @@ namespace FeatureExtractors
 				{
 					file << featureHistogram[i][j];
 					
-					if (((strategy == Utils::Histograms) || (strategy == Utils::ImageDescriptorsAndHistograms)) && (i == (HISTOGRAM_HORIZONTAL_BINS - 1)) && (j == (HISTOGRAM_VERTICAL_BINS - 1))) continue;
+					if (((strategy == Utils::Histograms) || (strategy == Utils::ImageDescriptorAndHistograms)) && (i == (HISTOGRAM_HORIZONTAL_BINS - 1)) && (j == (HISTOGRAM_VERTICAL_BINS - 1))) continue;
 					
 					file << ",";
 				}

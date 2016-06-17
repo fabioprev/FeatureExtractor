@@ -16,9 +16,9 @@ class Utils
 		 */
 		enum CSVGenerationStrategy
 		{
-			ImageDescriptors = 0,
+			ImageDescriptor = 0,
 			Histograms,
-			ImageDescriptorsAndHistograms,
+			ImageDescriptorAndHistograms,
 			HashCantor,
 			HistogramsAndHashCantor
 		};
