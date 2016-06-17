@@ -20,7 +20,8 @@ class Utils
 			Histograms,
 			ImageDescriptorAndHistograms,
 			HashCantor,
-			HistogramsAndHashCantor
+			HistogramsAndHashCantor,
+			Unknown
 		};
 		
 		/**
@@ -34,6 +35,40 @@ class Utils
 		inline static bool compareKeyPoint(const cv::KeyPoint& i, const cv::KeyPoint& j)
 		{
 			return (i.response > j.response);
+		}
+		
+		/**
+		 * @brief Function that returns the strategy chosen.
+		 * 
+		 * @param strategy strategy chosen in a string format.
+		 * 
+		 * @return the strategy chosen.
+		 */
+		inline static CSVGenerationStrategy getStrategy(const std::string& strategy)
+		{
+			if (strcasecmp(strategy.c_str(),"ImageDescriptor") == 0) return Utils::ImageDescriptor;
+			else if (strcasecmp(strategy.c_str(),"Histograms") == 0) return Utils::Histograms;
+			else if (strcasecmp(strategy.c_str(),"ImageDescriptorAndHistograms") == 0) return Utils::ImageDescriptorAndHistograms;
+			else if (strcasecmp(strategy.c_str(),"HashCantor") == 0) return Utils::HashCantor;
+			else if (strcasecmp(strategy.c_str(),"HistogramsAndHashCantor") == 0) return Utils::HistogramsAndHashCantor;
+			else return Utils::Unknown;
+		}
+		
+		/**
+		 * @brief Function that returns the strategy chosen in a string format.
+		 * 
+		 * @param strategy strategy chosen.
+		 * 
+		 * @return the strategy chosen in a string format.
+		 */
+		inline static std::string getStrategyString(const CSVGenerationStrategy& strategy)
+		{
+			if (strategy == Utils::ImageDescriptor) return "ImageDescriptor";
+			else if (strategy == Utils::Histograms) return "Histograms";
+			else if (strategy == Utils::ImageDescriptorAndHistograms) return "ImageDescriptorAndHistograms";
+			else if (strategy == Utils::HashCantor) return "HashCantor";
+			else if (strategy == Utils::HistogramsAndHashCantor) return "HistogramsAndHashCantor";
+			else return "Unknown";
 		}
 		
 		/**

@@ -81,7 +81,7 @@ set(EXECUTABLE_OUTPUT_PATH ../bin)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
-file(GLOB_RECURSE FeatureExtractor_src "FeatureExtractors/*.cpp")
+file(GLOB_RECURSE FeatureExtractor_src "FeatureExtractors/*.cpp" "Utils/*.cpp")
 
 # FeatureExtractor executable
 add_executable(FeatureExtractor ${FeatureExtractor_src})

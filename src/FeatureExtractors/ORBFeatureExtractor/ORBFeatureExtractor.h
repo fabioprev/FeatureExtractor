@@ -16,24 +16,14 @@ namespace FeatureExtractors
 	{
 		private:
 			/**
-			 * @brief number of horizontal bins to build the feature histogram.
-			 */
-			static const int HISTOGRAM_HORIZONTAL_BINS = 30;
-			
-			/**
-			 * @brief number of vertical bins to build the feature histogram.
-			 */
-			static const int HISTOGRAM_VERTICAL_BINS = 32;
-			
-			/**
-			 * @brief maximum number of features for a descriptor of an image.
-			 */
-			static const int MAXIMUM_NUMBER_OF_FEATURES = 75;
-			
-			/**
 			 * @brief vector of keypoints found in the image.
 			 */
 			std::vector<cv::KeyPoint> keypoints;
+			
+			/**
+			 * @brief sections of the patient brain which will be used to generate the features.
+			 */
+			std::vector<std::string> sections;
 			
 			/**
 			 * @brief descriptor extractor based on ORB.
@@ -51,14 +41,34 @@ namespace FeatureExtractors
 			std::mutex mutex;
 			
 			/**
+			 * @brief strategy used to generate the CSV files.
+			 */
+			Utils::CSVGenerationStrategy strategy;
+			
+			/**
+			 * @brief name of the data set chosen.
+			 */
+			std::string dataset;
+			
+			/**
 			 * @brief semaphore used to safely run multiple instances of 'convert'.
 			 */
 			long semaphoreId;
 			
 			/**
-			 * @brief strategy used to generate the CSV files.
+			 * @brief number of horizontal bins to build the feature histogram.
 			 */
-			Utils::CSVGenerationStrategy strategy;
+			int histogramHorizontalBins = 30;
+			
+			/**
+			 * @brief number of vertical bins to build the feature histogram.
+			 */
+			int histogramVerticalBins = 32;
+			
+			/**
+			 * @brief maximum number of features for a descriptor of an image.
+			 */
+			int maxFeatureNumber = 75;
 			
 			/**
 			 * @brief \b true means that the gif extraction is running, \b false otherwise.

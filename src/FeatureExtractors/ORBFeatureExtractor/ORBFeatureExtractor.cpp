@@ -1,4 +1,5 @@
 #include "ORBFeatureExtractor.h"
+#include <Utils/ConfigFile.h>
 #include <Utils/DebugUtils.h>
 #include <Utils/Utils.h>
 #include <sys/sem.h>
@@ -14,7 +15,98 @@ using namespace cv;
 
 namespace FeatureExtractors
 {
-	ORBFeatureExtractor::ORBFeatureExtractor() : strategy(Utils::Histograms), isExtracting(false) {;}
+	ORBFeatureExtractor::ORBFeatureExtractor() : isExtracting(false)
+	{
+		ConfigFile fCfg;
+		stringstream s;
+		string key, section, temp;
+		
+		if (!fCfg.read("../config/parameters.cfg"))
+		{
+			ERR("Error reading file '" << "../config/parameters.cfg" << "' for ORBFeatureExtractor configuration. Exiting..." << endl);
+			
+			exit(-1);
+		}
+		
+		try
+		{
+			section = "Dataset";
+			
+			key = "name";
+			dataset = string(fCfg.value(section,key));
+			
+			section = "FeatureExtractor";
+			
+			key = "histogramHorizontalBins";
+			histogramHorizontalBins = fCfg.value(section,key);
+			
+			key = "histogramVerticalBins";
+			histogramVerticalBins = fCfg.value(section,key);
+			
+			key = "maxFeatureNumber";
+			maxFeatureNumber = fCfg.value(section,key);
+			
+			key = "strategy";
+			strategy = Utils::getStrategy(string(fCfg.value(section,key)));
+			
+			section = "Brain";
+			
+			key = "sections";
+			temp = string(fCfg.value(section,key));
+			
+			s << temp;
+			
+			while (s.good())
+			{
+				if (s.eof()) break;
+				
+				getline(s,temp,',');
+				
+				sections.push_back(temp.c_str());
+			}
+			
+			ERR("******************************************************" << endl);
+			DEBUG("Feature extractor parameters:" << endl);
+			
+			INFO("\tData set: ");
+			WARN(dataset << endl);
+			
+			INFO("\tHorizontal histogram bins: ");
+			WARN(histogramHorizontalBins << endl);
+			
+			INFO("\tVertical histogram bins: ");
+			WARN(histogramVerticalBins << endl);
+			
+			INFO("\tMaximum number of features: ");
+			WARN(maxFeatureNumber << endl);
+			
+			INFO("\tFeature selection strategy: ");
+			WARN(Utils::getStrategyString(strategy) << endl);
+			
+			INFO("\tPatient brain sections: ");
+			
+			if (strcasecmp(dataset.c_str(),"OASIS") == 0) WARN("000" << endl)
+			else
+			{
+				for (vector<string>::const_iterator it = sections.begin(); it != sections.end(); ++it)
+				{
+					WARN(*it);
+					
+					if ((it + 1) != sections.end()) WARN(",");
+				}
+				
+				WARN(endl);
+			}
+			
+			ERR("******************************************************" << endl << endl);
+		}
+		catch (...)
+		{
+			ERR("Not existing value '" << section << "/" << key << "'. Exiting..." << endl);
+			
+			exit(-1);
+		}
+	}
 	
 	ORBFeatureExtractor::~ORBFeatureExtractor() {;}
 	
@@ -139,7 +231,6 @@ namespace FeatureExtractors
 	
 	void ORBFeatureExtractor::exec(const string& directory)
 	{
-		vector<string> sections;
 		int counter;
 		
 		const vector<string>& images = extractFramesFromGif(directory);
@@ -147,10 +238,6 @@ namespace FeatureExtractors
 		/// Synchronising with gif thread checker. This code must be executed only when the thread has finished is execution.
 		mutex.lock();
 		mutex.unlock();
-		
-		//sections.push_back("section_107.png");
-		//sections.push_back("section_127.png");
-		sections.push_back("section_147.png");
 		
 		counter = 0;
 		
@@ -176,9 +263,9 @@ namespace FeatureExtractors
 			
 			for (vector<string>::const_iterator it2 = sections.begin(); it2 != sections.end(); ++it2)
 			{
-				const Mat& image = imread(patientPath + *it2);
+				const Mat& image = imread(patientPath + string("section_") + *it2 + string(".png"));
 				
-				if (!image.empty()) exec(image,patientPath,*it2);
+				if (!image.empty()) exec(image,patientPath,string("section_") + *it2 + string(".png"));
 			}
 			
 			INFO("done!" << endl);
@@ -197,7 +284,7 @@ namespace FeatureExtractors
 		const Mat& descriptor = imread(outputDirectory + string("../features/descriptors/descriptor_") + section);
 		
 		/// Checking whether the current maximum number of features is different with respect to the one used to generate the feature's images, if any.
-		if (!descriptor.empty() && descriptor.rows != MAXIMUM_NUMBER_OF_FEATURES) isFeaturesGenerationNeeded = true;
+		if (!descriptor.empty() && descriptor.rows != maxFeatureNumber) isFeaturesGenerationNeeded = true;
 		else isFeaturesGenerationNeeded = false;
 		
 		if (isFeaturesGenerationNeeded || (stat((outputDirectory + string("../features/keypoints/keypoint_") + section).c_str(),&status) != 0) || !S_ISREG(status.st_mode))
@@ -234,7 +321,7 @@ namespace FeatureExtractors
 		
 		sort(keypoints.begin(),keypoints.end(),Utils::compareKeyPoint);
 		
-		if (keypoints.size() > MAXIMUM_NUMBER_OF_FEATURES) keypoints.erase(keypoints.begin() + MAXIMUM_NUMBER_OF_FEATURES,keypoints.end());
+		if ((int) keypoints.size() > maxFeatureNumber) keypoints.erase(keypoints.begin() + maxFeatureNumber,keypoints.end());
 		
 		Mat keypointsImage;
 		
@@ -346,12 +433,12 @@ namespace FeatureExtractors
 		
 		if ((strategy == Utils::Histograms) || (strategy == Utils::ImageDescriptorAndHistograms) || (strategy == Utils::HistogramsAndHashCantor))
 		{
-			int featureHistogram[HISTOGRAM_HORIZONTAL_BINS][HISTOGRAM_VERTICAL_BINS];
+			int featureHistogram[histogramHorizontalBins][histogramVerticalBins];
 			
 			/// Initializing the histogram's bins.
-			for (int i = 0; i < HISTOGRAM_HORIZONTAL_BINS; ++i)
+			for (int i = 0; i < histogramHorizontalBins; ++i)
 			{
-				for (int j = 0; j < HISTOGRAM_VERTICAL_BINS; ++j)
+				for (int j = 0; j < histogramVerticalBins; ++j)
 				{
 					featureHistogram[i][j] = 0;
 				}
@@ -359,16 +446,16 @@ namespace FeatureExtractors
 			
 			for (vector<KeyPoint>::const_iterator it = keypoints.begin(); it != keypoints.end(); ++it)
 			{
-				++featureHistogram[(int) (it->pt.y / (image.rows / HISTOGRAM_HORIZONTAL_BINS))][(int) (it->pt.x / (image.cols / HISTOGRAM_VERTICAL_BINS))];
+				++featureHistogram[(int) (it->pt.y / (image.rows / histogramHorizontalBins))][(int) (it->pt.x / (image.cols / histogramVerticalBins))];
 			}
 			
-			for (int i = 0; i < HISTOGRAM_HORIZONTAL_BINS; ++i)
+			for (int i = 0; i < histogramHorizontalBins; ++i)
 			{
-				for (int j = 0; j < HISTOGRAM_VERTICAL_BINS; ++j)
+				for (int j = 0; j < histogramVerticalBins; ++j)
 				{
 					file << featureHistogram[i][j];
 					
-					if (((strategy == Utils::Histograms) || (strategy == Utils::ImageDescriptorAndHistograms)) && (i == (HISTOGRAM_HORIZONTAL_BINS - 1)) && (j == (HISTOGRAM_VERTICAL_BINS - 1))) continue;
+					if (((strategy == Utils::Histograms) || (strategy == Utils::ImageDescriptorAndHistograms)) && (i == (histogramHorizontalBins - 1)) && (j == (histogramVerticalBins - 1))) continue;
 					
 					file << ",";
 				}
@@ -506,11 +593,11 @@ namespace FeatureExtractors
 				for (vector<string>::const_iterator it3 = sections.begin(); it3 != sections.end(); ++it3)
 				{
 					temp = directory + ((directory.at(directory.size() - 1) == '/') ? "" : "/") + *it + "/" + temp2.substr(0,temp2.rfind("_")) + "/" + date + "/" + temp2.substr(temp2.rfind("_") + 1) +
-						   "/features/descriptors/descriptor_" + *it3;
+						   "/features/descriptors/descriptor_section_" + *it3 + string(".png");
 					
 					const Mat& image = imread(temp);
 					
-					if (image.rows < MAXIMUM_NUMBER_OF_FEATURES) continue;
+					if (image.rows < maxFeatureNumber) continue;
 					
 					file.open((temp.substr(0,temp.rfind("png")) + string("csv")).c_str());
 					
@@ -529,8 +616,8 @@ namespace FeatureExtractors
 					
 					patient = (temp2.substr(0,temp2.rfind("_"))).substr(0,temp2.substr(0,temp2.rfind("_")).rfind("/"));
 					
-					patientsFile.open((directory + ((directory.at(directory.size() - 1) == '/') ? "" : "/") + string("ClassPatientFiles/") + *it + string("_") + period + string("_") + it3->substr(0,it3->rfind("png")) +
-									   string("csv")).c_str(),ios_base::app);
+					patientsFile.open((directory + ((directory.at(directory.size() - 1) == '/') ? "" : "/") + string("ClassPatientFiles/") + *it + string("_") + period + string("_section_") + *it3 +
+									   string(".csv")).c_str(),ios_base::app);
 					
 					patientsFile << patient << "," << temp << "," << *it << endl;
 					
