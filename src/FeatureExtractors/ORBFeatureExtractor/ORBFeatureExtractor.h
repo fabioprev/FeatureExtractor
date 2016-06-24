@@ -143,9 +143,8 @@ namespace FeatureExtractors
 			 * @brief Function that writes the joint CSV file for each Alzheimer's class.
 			 * 
 			 * @param directory name of the directory which contains the images to be analysed.
-			 * @param sections reference to the vector containing the analyzed sections.
 			 */
-			void writeJointCSV(const std::string& directory, const std::vector<std::string>& sections);
+			void writeJointCSV(const std::string& directory);
 			
 		public:
 			/**

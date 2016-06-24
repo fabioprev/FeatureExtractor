@@ -85,20 +85,14 @@ namespace FeatureExtractors
 			
 			INFO("\tPatient brain sections: ");
 			
-			if (strcasecmp(dataset.c_str(),"OASIS") == 0) WARN("000" << endl)
-			else
+			for (vector<string>::const_iterator it = sections.begin(); it != sections.end(); ++it)
 			{
-				for (vector<string>::const_iterator it = sections.begin(); it != sections.end(); ++it)
-				{
-					WARN(*it);
-					
-					if ((it + 1) != sections.end()) WARN(",");
-				}
+				WARN(*it);
 				
-				WARN(endl);
+				if ((it + 1) != sections.end()) WARN(",");
 			}
 			
-			ERR("******************************************************" << endl << endl);
+			ERR(endl << "******************************************************" << endl << endl);
 		}
 		catch (...)
 		{
@@ -235,8 +229,6 @@ namespace FeatureExtractors
 		
 		const vector<string>& images = extractFramesFromGif(directory);
 		
-		return;
-		
 		/// Synchronising with gif thread checker. This code must be executed only when the thread has finished is execution.
 		mutex.lock();
 		mutex.unlock();
@@ -248,7 +240,7 @@ namespace FeatureExtractors
 			stringstream s;
 			string patientPath;
 			
-			patientPath = it->substr(0,it->rfind("/")) + string("/sections/");
+			patientPath = it->substr(0,it->rfind("/")) + ((strcasecmp(dataset.c_str(),"OASIS") == 0) ? "/" : string("/sections/"));
 			
 			if (system((string("rm -rf ") + patientPath + string("../features/keypoints")).c_str()));
 			if (system((string("rm -rf ") + patientPath + string("../features/descriptors")).c_str()));
@@ -260,20 +252,27 @@ namespace FeatureExtractors
 			
 			ERR("[" << s.str() << "%] ");
 			INFO("Generating features of '");
-			WARN(it->substr(0,it->rfind("/")));
+			
+			if (strcasecmp(dataset.c_str(),"OASIS") == 0) WARN(it->substr(0,it->rfind("/")).substr(0,it->substr(0,it->rfind("/")).rfind("/")))
+			else WARN(it->substr(0,it->rfind("/")));
+			
 			INFO("'...");
 			
 			for (vector<string>::const_iterator it2 = sections.begin(); it2 != sections.end(); ++it2)
 			{
-				const Mat& image = imread(patientPath + string("section_") + *it2 + string(".png"));
+				s.str("");
+				s.clear();
 				
-				if (!image.empty()) exec(image,patientPath,string("section_") + *it2 + string(".png"));
+				s << setw(3) << setfill('0') << *it2;
+				
+				const Mat& image = imread(patientPath + string("section_") + s.str() + string(".png"));
+				if (!image.empty()) exec(image,patientPath,string("section_") + s.str() + string(".png"));
 			}
 			
 			INFO("done!" << endl);
 		}
 		
-		writeJointCSV(directory,sections);
+		writeJointCSV(directory);
 	}
 	
 	void ORBFeatureExtractor::exec(const Mat& image, const string& outputDirectory, const string& section)
@@ -340,74 +339,106 @@ namespace FeatureExtractors
 		int counter, ret;
 		char buffer[4096];
 		
-		if (system((string("find ") + directory + string(" -name *.gif > .temp")).c_str()));
-		
-		imageFiles.open(".temp");
-		
-		while (imageFiles.good())
-		{
-			if (imageFiles.eof()) break;
-			
-			imageFiles.getline(buffer,4096);
-			
-			if (strlen(buffer) > 0) images.push_back(buffer);
-		}
-		
-		imageFiles.close();
-		
-		if (system("rm -rf .temp"));
-		
-		counter = 0;
-		
-		for (vector<string>::const_iterator it = images.begin(); it != images.end(); ++it)
-		{
-			struct stat status;
-			
-			if ((stat((it->substr(0,it->rfind("/")) + string("/sections")).c_str(),&status) == 0) && S_ISDIR(status.st_mode)) ++counter;
-		}
-		
-		createSemaphore();
-		
-		isExtracting = true;
-		
-		pthread_create(&threadId,0,(void*(*)(void*)) checkerThread,this);
-		
-		for (vector<string>::const_iterator it = images.begin(); it != images.end(); ++it)
+		if (strcasecmp(dataset.c_str(),"OASIS") == 0)
 		{
 			stringstream s;
-			struct stat status;
 			
-			/// Sections have been already generated.
-			if ((strcasecmp(dataset.c_str(),"OASIS") != 0) && (stat((it->substr(0,it->rfind("/")) + string("/sections")).c_str(),&status) == 0) && S_ISDIR(status.st_mode)) continue;
-			
-			struct sembuf oper;
-			
-			oper.sem_num = 0;
-			oper.sem_op = -1;
-			oper.sem_flg = 0;
-			
-			ret = semop(semaphoreId,&oper,1);
-			
-			if (ret == -1)
+			for (vector<string>::const_iterator it = sections.begin(); it != sections.end(); ++it)
 			{
-				WARN("An error occured when calling semop. I am not exiting though..." << endl);
+				s.str("");
+				s.clear();
+				
+				s << setw(3) << setfill('0') << *it;
+				
+				if (system((string("find ") + directory + string(" -wholename */section_") + s.str() + string(".png > .temp")).c_str()));
+				
+				imageFiles.open(".temp");
+				
+				while (imageFiles.good())
+				{
+					if (imageFiles.eof()) break;
+					
+					imageFiles.getline(buffer,4096);
+					
+					if (strlen(buffer) > 0) images.push_back(buffer);
+				}
+				
+				imageFiles.close();
+				
+				if (system("rm -rf .temp"));
+			}
+		}
+		else if (strcasecmp(dataset.c_str(),"ADNI") == 0)
+		{
+			if (system((string("find ") + directory + string(" -name *.gif > .temp")).c_str()));
+			
+			imageFiles.open(".temp");
+			
+			while (imageFiles.good())
+			{
+				if (imageFiles.eof()) break;
+				
+				imageFiles.getline(buffer,4096);
+				
+				if (strlen(buffer) > 0) images.push_back(buffer);
 			}
 			
-			s << setw(3) << setfill(' ') << Utils::roundN(counter++ / (float) images.size() * 100,0);
+			imageFiles.close();
 			
-			ERR("[" << s.str() << "%] ");
-			INFO("Extracting frames from '");
-			WARN(*it);
-			INFO("'...");
+			if (system("rm -rf .temp"));
 			
-			if (ret = system((string("cd ") + it->substr(0,it->rfind("/")) + string(" && mkdir -p sections && cd sections && convert ") + *it + string(" -coalesce section_%03d.png &")).c_str()));
+			counter = 0;
 			
-			if (ret != 0) break;
+			for (vector<string>::const_iterator it = images.begin(); it != images.end(); ++it)
+			{
+				struct stat status;
+				
+				if ((stat((it->substr(0,it->rfind("/")) + string("/sections")).c_str(),&status) == 0) && S_ISDIR(status.st_mode)) ++counter;
+			}
 			
-			INFO("done!" << endl);
+			createSemaphore();
+			
+			isExtracting = true;
+			
+			pthread_create(&threadId,0,(void*(*)(void*)) checkerThread,this);
+			
+			for (vector<string>::const_iterator it = images.begin(); it != images.end(); ++it)
+			{
+				stringstream s;
+				struct stat status;
+				
+				/// Sections have been already generated.
+				if ((strcasecmp(dataset.c_str(),"OASIS") != 0) && (stat((it->substr(0,it->rfind("/")) + string("/sections")).c_str(),&status) == 0) && S_ISDIR(status.st_mode)) continue;
+				
+				struct sembuf oper;
+				
+				oper.sem_num = 0;
+				oper.sem_op = -1;
+				oper.sem_flg = 0;
+				
+				ret = semop(semaphoreId,&oper,1);
+				
+				if (ret == -1)
+				{
+					WARN("An error occured when calling semop. I am not exiting though..." << endl);
+				}
+				
+				s << setw(3) << setfill(' ') << Utils::roundN(counter++ / (float) images.size() * 100,0);
+				
+				ERR("[" << s.str() << "%] ");
+				INFO("Extracting frames from '");
+				WARN(*it);
+				INFO("'...");
+				
+				if (ret = system((string("cd ") + it->substr(0,it->rfind("/")) + string(" && mkdir -p sections && cd sections && convert ") + *it + string(" -coalesce section_%03d.png &")).c_str()));
+				
+				if (ret != 0) break;
+				
+				INFO("done!" << endl);
+			}
+			
+			isExtracting = false;
 		}
-		
-		isExtracting = false;
 		
 		return images;
 	}
@@ -481,9 +512,10 @@ namespace FeatureExtractors
 		file.close();
 	}
 	
-	void ORBFeatureExtractor::writeJointCSV(const string& directory, const vector<string>& sections)
+	void ORBFeatureExtractor::writeJointCSV(const string& directory)
 	{
 		vector<string> classes, csvFiles, xmlFiles;
+		stringstream s;
 		ofstream patientsFile;
 		ifstream file;
 		string date, oldPatient, patient, period, temp, temp2;
@@ -491,49 +523,87 @@ namespace FeatureExtractors
 		char buffer[65536];
 		
 		classes.push_back("AD");
+		classes.push_back("CN");
 		classes.push_back("LMCI");
 		classes.push_back("MCI");
-		classes.push_back("CN");
 		
 		if (system((string("rm -rf ") + directory + ((directory.at(directory.size() - 1) == '/') ? string("") : string("/")) + string("ClassPatientFiles")).c_str()));
 		
 		if (system((string("mkdir -p ") + directory + ((directory.at(directory.size() - 1) == '/') ? string("") : string("/")) + string("ClassPatientFiles")).c_str()));
 		
-		for (vector<string>::const_iterator it = classes.begin(); it != classes.end(); ++it)
+		if (strcasecmp(dataset.c_str(),"OASIS") == 0)
 		{
-			xmlFiles.clear();
+			vector<string> files;
 			
-			if (system((string("ls ") + directory + ((directory.at(directory.size() - 1) == '/') ? string("") : string("/")) + *it + string("/*.xml > .temp")).c_str()));
-			
-			file.open(".temp");
-			
-			while (file.good())
+			for (vector<string>::const_iterator it = classes.begin(); it != classes.end(); ++it)
 			{
-				if (file.eof()) break;
-				
-				file.getline(buffer,65536);
-				
-				if (strlen(buffer) > 0) xmlFiles.push_back(buffer);
+				for (vector<string>::const_iterator it2 = sections.begin(); it2 != sections.end(); ++it2)
+				{
+					s.str("");
+					s.clear();
+					
+					s << setw(3) << setfill('0') << *it2;
+					
+					if (system((string("find ") + directory + ((directory.at(directory.size() - 1) == '/') ? string("") : string("/")) + *it + string(" -name *") + s.str() + string(".csv > .temp")).c_str()));
+					
+					file.open(".temp");
+					
+					files.clear();
+					
+					while (file.good())
+					{
+						if (file.eof()) break;
+						
+						file.getline(buffer,65536);
+						
+						if (strlen(buffer) > 0) files.push_back(buffer);
+					}
+					
+					file.close();
+					
+					if (system("rm -rf .temp"));
+					
+					for (vector<string>::const_iterator it3 = files.begin(); it3 != files.end(); ++it3)
+					{
+						const Mat& image = imread(it3->substr(0,it3->rfind("csv")) + string("png"));
+						
+						if (image.rows < maxFeatureNumber) continue;
+						
+						file.open(it3->c_str());
+						
+						while (file.good())
+						{
+							if (file.eof()) break;
+							
+							file.getline(buffer,65536);
+							
+							temp = buffer;
+							
+							break;
+						}
+						
+						file.close();
+						
+						patient = it3->substr(it3->find(dataset) + dataset.size() + 1);
+						patient = patient.substr(patient.find(*it) + it->size() + 1);
+						patient = patient.substr(0,patient.find("/"));
+						
+						patientsFile.open((directory + ((directory.at(directory.size() - 1) == '/') ? "" : "/") + string("ClassPatientFiles/") + *it + string("_section_") + *it2 + string(".csv")).c_str(),ios_base::app);
+						
+						patientsFile << patient << "," << temp << "," << *it << endl;
+						
+						patientsFile.close();
+					}
+				}
 			}
-			
-			file.close();
-			
-			if (system("rm -rf .temp"));
-			
-			counter = 0;
-			
-			INFO("Generating matrices for class: ");
-			WARN(*it << endl);
-			
-			for (vector<string>::const_iterator it2 = xmlFiles.begin(); it2 != xmlFiles.end(); ++it2, ++counter)
+		}
+		else if (strcasecmp(dataset.c_str(),"ADNI") == 0)
+		{
+			for (vector<string>::const_iterator it = classes.begin(); it != classes.end(); ++it)
 			{
-				if ((counter % (xmlFiles.size() / 10)) == 0)
-				{
-					if (ceil(counter + (xmlFiles.size() / 10)) > xmlFiles.size()) ERR("100% done." << endl)
-					else ERR(ceil(counter * 100.0 / xmlFiles.size()) << "% done." << endl)
-				}
+				xmlFiles.clear();
 				
-				if (system((string("cat ") + *it2 + string(" | grep dateAcquired > .temp")).c_str()));
+				if (system((string("ls ") + directory + ((directory.at(directory.size() - 1) == '/') ? string("") : string("/")) + *it + string("/*.xml > .temp")).c_str()));
 				
 				file.open(".temp");
 				
@@ -543,65 +613,29 @@ namespace FeatureExtractors
 					
 					file.getline(buffer,65536);
 					
-					temp = buffer;
-					
-					break;
+					if (strlen(buffer) > 0) xmlFiles.push_back(buffer);
 				}
 				
 				file.close();
 				
 				if (system("rm -rf .temp"));
 				
-				date = (temp.substr(temp.find(">") + 1)).substr(0,(temp.substr(temp.find(">") + 1)).rfind("<"));
+				counter = 0;
 				
-				replace(date.begin(),date.end(),' ','_');
-				replace(date.begin(),date.end(),':','_');
+				INFO("Generating matrices for class: ");
+				WARN(*it << endl);
 				
-				if (system((string("cat ") + *it2 + string(" | grep visitIdentifier > .temp")).c_str()));
-				
-				file.open(".temp");
-				
-				while (file.good())
+				for (vector<string>::const_iterator it2 = xmlFiles.begin(); it2 != xmlFiles.end(); ++it2, ++counter)
 				{
-					if (file.eof()) break;
+					if ((counter % (xmlFiles.size() / 10)) == 0)
+					{
+						if (ceil(counter + (xmlFiles.size() / 10)) > xmlFiles.size()) ERR("100% done." << endl)
+						else ERR(ceil(counter * 100.0 / xmlFiles.size()) << "% done." << endl)
+					}
 					
-					file.getline(buffer,65536);
+					if (system((string("cat ") + *it2 + string(" | grep dateAcquired > .temp")).c_str()));
 					
-					temp = buffer;
-					
-					break;
-				}
-				
-				file.close();
-				
-				if (system("rm -rf .temp"));
-				
-				period = (temp.substr(temp.find(">") + 1)).substr(0,(temp.substr(temp.find(">") + 1)).rfind("<"));
-				
-				if (period.find("Month") == string::npos) continue;
-				
-				period = period.substr(period.rfind(" ") + 1);
-				
-				temp = it2->substr(it2->rfind("/") + 1);
-				temp = temp.substr(temp.find("_") + 1);
-				temp = temp.substr(0,temp.rfind("_"));
-				
-				string::size_type i = temp.find("_");
-				
-				for (int j = 0; (j < 2) && (i != string::npos); ++j) i = temp.find("_",i + 1);
-				
-				temp2 = temp.substr(0,i) + "/" + temp.substr(i+1);
-				
-				for (vector<string>::const_iterator it3 = sections.begin(); it3 != sections.end(); ++it3)
-				{
-					temp = directory + ((directory.at(directory.size() - 1) == '/') ? "" : "/") + *it + "/" + temp2.substr(0,temp2.rfind("_")) + "/" + date + "/" + temp2.substr(temp2.rfind("_") + 1) +
-						   "/features/descriptors/descriptor_section_" + *it3 + string(".png");
-					
-					const Mat& image = imread(temp);
-					
-					if (image.rows < maxFeatureNumber) continue;
-					
-					file.open((temp.substr(0,temp.rfind("png")) + string("csv")).c_str());
+					file.open(".temp");
 					
 					while (file.good())
 					{
@@ -616,14 +650,81 @@ namespace FeatureExtractors
 					
 					file.close();
 					
-					patient = (temp2.substr(0,temp2.rfind("_"))).substr(0,temp2.substr(0,temp2.rfind("_")).rfind("/"));
+					if (system("rm -rf .temp"));
 					
-					patientsFile.open((directory + ((directory.at(directory.size() - 1) == '/') ? "" : "/") + string("ClassPatientFiles/") + *it + string("_") + period + string("_section_") + *it3 +
-									   string(".csv")).c_str(),ios_base::app);
+					date = (temp.substr(temp.find(">") + 1)).substr(0,(temp.substr(temp.find(">") + 1)).rfind("<"));
 					
-					patientsFile << patient << "," << temp << "," << *it << endl;
+					replace(date.begin(),date.end(),' ','_');
+					replace(date.begin(),date.end(),':','_');
 					
-					patientsFile.close();
+					if (system((string("cat ") + *it2 + string(" | grep visitIdentifier > .temp")).c_str()));
+					
+					file.open(".temp");
+					
+					while (file.good())
+					{
+						if (file.eof()) break;
+						
+						file.getline(buffer,65536);
+						
+						temp = buffer;
+						
+						break;
+					}
+					
+					file.close();
+					
+					if (system("rm -rf .temp"));
+					
+					period = (temp.substr(temp.find(">") + 1)).substr(0,(temp.substr(temp.find(">") + 1)).rfind("<"));
+					
+					if (period.find("Month") == string::npos) continue;
+					
+					period = period.substr(period.rfind(" ") + 1);
+					
+					temp = it2->substr(it2->rfind("/") + 1);
+					temp = temp.substr(temp.find("_") + 1);
+					temp = temp.substr(0,temp.rfind("_"));
+					
+					string::size_type i = temp.find("_");
+					
+					for (int j = 0; (j < 2) && (i != string::npos); ++j) i = temp.find("_",i + 1);
+					
+					temp2 = temp.substr(0,i) + "/" + temp.substr(i+1);
+					
+					for (vector<string>::const_iterator it3 = sections.begin(); it3 != sections.end(); ++it3)
+					{
+						temp = directory + ((directory.at(directory.size() - 1) == '/') ? "" : "/") + *it + "/" + temp2.substr(0,temp2.rfind("_")) + "/" + date + "/" + temp2.substr(temp2.rfind("_") + 1) +
+							   "/features/descriptors/descriptor_section_" + *it3 + string(".png");
+						
+						const Mat& image = imread(temp);
+						
+						if (image.rows < maxFeatureNumber) continue;
+						
+						file.open((temp.substr(0,temp.rfind("png")) + string("csv")).c_str());
+						
+						while (file.good())
+						{
+							if (file.eof()) break;
+							
+							file.getline(buffer,65536);
+							
+							temp = buffer;
+							
+							break;
+						}
+						
+						file.close();
+						
+						patient = (temp2.substr(0,temp2.rfind("_"))).substr(0,temp2.substr(0,temp2.rfind("_")).rfind("/"));
+						
+						patientsFile.open((directory + ((directory.at(directory.size() - 1) == '/') ? "" : "/") + string("ClassPatientFiles/") + *it + string("_") + period + string("_section_") + *it3 +
+										   string(".csv")).c_str(),ios_base::app);
+						
+						patientsFile << patient << "," << temp << "," << *it << endl;
+						
+						patientsFile.close();
+					}
 				}
 			}
 		}
@@ -667,13 +768,13 @@ namespace FeatureExtractors
 					
 					if (strlen(buffer) == 0) break;
 					
-					patient = buffer;
+					patient = string(buffer).substr(0,string(buffer).find(","));
 					
 					if (oldPatient != patient)
 					{
 						oldPatient = patient;
 						
-						patientsFile << patient << endl;
+						patientsFile << string(buffer) << endl;
 					}
 				}
 				
