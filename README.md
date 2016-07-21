@@ -37,4 +37,4 @@ you can modify the feature extraction parameters based on your need. In order to
 execute FeatureExtractor you just need to type in to a terminal the following command:
 
   - cd bin
-  - ./FeatureExtractor -d <directory-root>
+  - ./FeatureExtractor -d \<directory-root\>
