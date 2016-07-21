@@ -9,7 +9,7 @@ FeatureExtractor requires the following packages to build:
   * g++
   * cmake
 
-On Xubuntu (Ubuntu) 14.04.4 LTS (kernel 3.13.0-37), these dependencies are
+On Xubuntu (Ubuntu) 14.04.4 LTS (kernel 4.2.0-27), these dependencies are
 resolved by installing the following packages:
   
   - build-essential
