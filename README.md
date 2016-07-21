@@ -29,7 +29,10 @@ build which can be achieved by the following command sequence:
 
 # Usage
 
-In order to execute FeatureExtractor you just need to type in to a terminal the following command:
+Before executing the program, you need to verify in the parameters.cfg the
+data set chosen. For now, the only supported data sets are ADNI and OASIS. Also
+you can modify the feature extraction parameters based on your need. In order to
+execute FeatureExtractor you just need to type in to a terminal the following command:
 
   - cd bin
   - ./FeatureExtractor -d <directory-root>
