@@ -389,9 +389,9 @@ namespace FeatureExtractors
 			
 			if (images.empty())
 			{
-				INFO("No GIF images have been found in'");
+				INFO("No GIF images have been found in '");
 				WARN(directory);
-				INFO("'. Did you run the Matlab software in the ImageExtractor directory first? Exiting..." << endl);
+				INFO("'. Have you ran the Matlab software in the ImageExtractor directory first? Exiting..." << endl);
 				
 				exit(-1);
 			}
