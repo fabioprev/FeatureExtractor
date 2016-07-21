@@ -9,6 +9,7 @@ FeatureExtractor requires the following packages to build:
   * g++
   * cmake
   * opencv
+  * convert
 
 On Xubuntu (Ubuntu) 14.04.4 LTS (kernel 4.2.0-27), these dependencies are
 resolved by installing the following packages:
@@ -16,6 +17,7 @@ resolved by installing the following packages:
   - build-essential
   - cmake
   - libopencv-dev
+  - imagemagick
 
 # How to build
 
