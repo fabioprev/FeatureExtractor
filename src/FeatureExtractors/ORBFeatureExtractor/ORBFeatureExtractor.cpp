@@ -387,6 +387,13 @@ namespace FeatureExtractors
 			
 			if (system("rm -rf .temp"));
 			
+			if (images.empty())
+			{
+				INFO("No GIF images have been found in'");
+				WARN(directory);
+				INFO("'. Did you run the Matlab software in the ImageExtractor directory first? Exiting..." << endl);
+			}
+			
 			counter = 0;
 			
 			for (vector<string>::const_iterator it = images.begin(); it != images.end(); ++it)
