@@ -367,6 +367,8 @@ namespace FeatureExtractors
 				
 				if (system("rm -rf .temp"));
 			}
+			
+cerr << "images: " << images.size() << endl;
 		}
 		else if (strcasecmp(dataset.c_str(),"ADNI") == 0)
 		{
