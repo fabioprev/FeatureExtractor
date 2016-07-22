@@ -370,6 +370,30 @@ namespace FeatureExtractors
 			
 			if (images.empty())
 			{
+				for (vector<string>::const_iterator it = sections.begin(); it != sections.end(); ++it)
+				{
+					if ((atoi(it->c_str()) < 0) || (atoi(it->c_str()) > 127))
+					{
+						INFO("You set a wrong list of brain sections ");
+						WARN("[");
+						
+						for (vector<string>::const_iterator it2 = sections.begin(); it2 != sections.end(); ++it2)
+						{
+							if ((atoi(it2->c_str()) < 0) || (atoi(it2->c_str()) > 127)) WARN(*it2);
+							
+							if ((it2 + 1) != sections.end())
+							{
+								if ((atoi((it2 + 1)->c_str()) < 0) || (atoi((it2 + 1)->c_str()) > 127)) WARN(",");
+							}
+						}
+						
+						WARN("]");
+						INFO(". The brain sections are within [0,127]." << endl);
+						
+						exit(-1);
+					}
+				}
+				
 				INFO("No PNG images have been found in '");
 				WARN(directory);
 				INFO("'. Have you ran the Matlab software in the ImageExtractor directory first? Exiting..." << endl);
