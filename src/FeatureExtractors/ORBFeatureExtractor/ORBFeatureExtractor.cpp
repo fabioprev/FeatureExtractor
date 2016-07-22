@@ -368,7 +368,14 @@ namespace FeatureExtractors
 				if (system("rm -rf .temp"));
 			}
 			
-cerr << "images: " << images.size() << endl;
+			if (images.empty())
+			{
+				INFO("No PNG images have been found in '");
+				WARN(directory);
+				INFO("'. Have you ran the Matlab software in the ImageExtractor directory first? Exiting..." << endl);
+				
+				exit(-1);
+			}
 		}
 		else if (strcasecmp(dataset.c_str(),"ADNI") == 0)
 		{
