@@ -375,7 +375,7 @@ namespace FeatureExtractors
 					if ((atoi(it->c_str()) < 0) || (atoi(it->c_str()) > 127))
 					{
 						INFO("You set a wrong list of brain sections ");
-						WARN("[");
+						WARN("{");
 						
 						for (vector<string>::const_iterator it2 = sections.begin(); it2 != sections.end(); ++it2)
 						{
@@ -387,7 +387,7 @@ namespace FeatureExtractors
 							}
 						}
 						
-						WARN("]");
+						WARN("}");
 						INFO(". The brain sections are within [0,127]." << endl);
 						
 						exit(-1);
@@ -403,6 +403,9 @@ namespace FeatureExtractors
 		}
 		else if (strcasecmp(dataset.c_str(),"ADNI") == 0)
 		{
+			vector<string> wrongSections;
+			unsigned int numberOfWrongSections;
+			
 			if (system((string("find ") + directory + string(" -name *.gif > .temp")).c_str()));
 			
 			imageFiles.open(".temp");
@@ -425,6 +428,35 @@ namespace FeatureExtractors
 				INFO("No GIF images have been found in '");
 				WARN(directory);
 				INFO("'. Have you ran the Matlab software in the ImageExtractor directory first? Exiting..." << endl);
+				
+				exit(-1);
+			}
+			
+			numberOfWrongSections = 0;
+			
+			for (vector<string>::const_iterator it = sections.begin(); it != sections.end(); ++it)
+			{
+				if ((atoi(it->c_str()) < 0) || (atoi(it->c_str()) > 255) || Utils::isNotNumber(*it))
+				{
+					wrongSections.push_back(*it);
+					++numberOfWrongSections;
+				}
+			}
+			
+			if (numberOfWrongSections == sections.size())
+			{
+				INFO("You set a wrong list of brain sections ");
+				WARN("{");
+				
+				for (vector<string>::const_iterator it = wrongSections.begin(); it != wrongSections.end(); ++it)
+				{
+					WARN(*it);
+					
+					if ((it + 1) != wrongSections.end()) WARN(",");
+				}
+				
+				WARN("}");
+				INFO(". The brain sections are within [0,255]." << endl);
 				
 				exit(-1);
 			}
@@ -579,6 +611,9 @@ namespace FeatureExtractors
 			
 			for (vector<string>::const_iterator it = classes.begin(); it != classes.end(); ++it)
 			{
+				INFO("Generating matrices for class: ");
+				WARN(*it << endl);
+				
 				for (vector<string>::const_iterator it2 = sections.begin(); it2 != sections.end(); ++it2)
 				{
 					s.str("");
@@ -605,8 +640,19 @@ namespace FeatureExtractors
 					
 					if (system("rm -rf .temp"));
 					
-					for (vector<string>::const_iterator it3 = files.begin(); it3 != files.end(); ++it3)
+					counter = 0;
+					
+					for (vector<string>::const_iterator it3 = files.begin(); it3 != files.end(); ++it3, ++counter)
 					{
+						if (it2 == sections.begin())
+						{
+							if ((files.size() < 10) || (counter % (files.size() / 10)) == 0)
+							{
+								if (((it3 + 1) == files.end()) || ceil(counter + (files.size() / 10)) > files.size()) ERR("100% done." << endl)
+								else ERR(ceil(counter * 100.0 / files.size()) << "% done." << endl)
+							}
+						}
+						
 						const Mat& image = imread(it3->substr(0,it3->rfind("csv")) + string("png"));
 						
 						if (image.rows < maxFeatureNumber) continue;
@@ -669,9 +715,9 @@ namespace FeatureExtractors
 				
 				for (vector<string>::const_iterator it2 = xmlFiles.begin(); it2 != xmlFiles.end(); ++it2, ++counter)
 				{
-					if ((counter % (xmlFiles.size() / 10)) == 0)
+					if ((xmlFiles.size() < 10) || (counter % (xmlFiles.size() / 10)) == 0)
 					{
-						if (ceil(counter + (xmlFiles.size() / 10)) > xmlFiles.size()) ERR("100% done." << endl)
+						if (((it2 + 1) == xmlFiles.end()) || ceil(counter + (xmlFiles.size() / 10)) > xmlFiles.size()) ERR("100% done." << endl)
 						else ERR(ceil(counter * 100.0 / xmlFiles.size()) << "% done." << endl)
 					}
 					

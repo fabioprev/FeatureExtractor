@@ -72,6 +72,23 @@ class Utils
 		}
 		
 		/**
+		 * @brief Function that checks whether the number given as input is actually a number.
+		 * 
+		 * @param number the number to be checked.
+		 * 
+		 * @return \b true if the number given as input is actually a number, \b false otherwise.
+		 */
+		inline static bool isNotNumber(const std::string& number)
+		{
+			for (unsigned int i = 0; i < number.size(); ++i)
+			{
+				if (!isdigit(number[i])) return true;
+			}
+			
+			return false;
+		}
+		
+		/**
 		 * @brief Function that truncates a floating number to a specified decimal position.
 		 * 
 		 * @param d floating number to be truncated.
