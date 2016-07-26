@@ -26,10 +26,10 @@ resolved by installing the following packages:
 The only development platform is Linux. We recommend a so-called out of source
 build which can be achieved by the following command sequence:
   
-  - mkdir build
-  - cd build
-  - cmake ../src
-  - make -j\<number-of-cores+1\>
+        - mkdir build
+        - cd build
+        - cmake ../src
+        - make -j\<number-of-cores+1\>
 
 # Usage
 
@@ -38,5 +38,5 @@ data set chosen. For now, the only supported data sets are ADNI and OASIS. Also
 you can modify the feature extraction parameters based on your need. In order to
 execute FeatureExtractor you just need to type in to a terminal the following command:
 
-  - cd bin
-  - ./FeatureExtractor -d \<directory-root\>
+        - cd bin
+        - ./FeatureExtractor -d \<directory-root\>
