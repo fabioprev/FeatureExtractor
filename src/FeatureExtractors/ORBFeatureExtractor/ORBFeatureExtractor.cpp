@@ -596,10 +596,25 @@ namespace FeatureExtractors
 		int counter;
 		char buffer[65536];
 		
-		classes.push_back("AD");
-		classes.push_back("CN");
-		classes.push_back("LMCI");
-		classes.push_back("MCI");
+		if (system((string("find ") + directory + ((directory.at(directory.size() - 1) == '/') ? string("") : string("/")) + string(" -mindepth 1 -maxdepth 1 -type d > .temp")).c_str()));
+		
+		file.open(".temp");
+		
+		while (file.good())
+		{
+			if (file.eof()) break;
+			
+			file.getline(buffer,65536);
+			
+			if ((strlen(buffer) > 0) && (string(buffer).find("ClassPatientFiles") == string::npos) && (string(buffer).find("ClassifierFiles") == string::npos))
+			{
+				classes.push_back(string(buffer).substr(string(buffer).rfind("/") + 1));
+			}
+		}
+		
+		file.close();
+		
+		if (system("rm -rf .temp"));
 		
 		if (system((string("rm -rf ") + directory + ((directory.at(directory.size() - 1) == '/') ? string("") : string("/")) + string("ClassPatientFiles")).c_str()));
 		
