@@ -7,6 +7,7 @@
 #include <sys/stat.h>
 #include <signal.h>
 #include <unistd.h>
+#include <algorithm>
 #include <fstream>
 #include <iomanip>
 
@@ -34,6 +35,11 @@ namespace FeatureExtractors
 			
 			key = "name";
 			dataset = string(fCfg.value(section,key));
+			
+			section = "OwnDataset";
+			
+			key = "imageFormat";
+			imageFormat = string(fCfg.value(section,key));
 			
 			section = "FeatureExtractor";
 			
@@ -70,6 +76,12 @@ namespace FeatureExtractors
 			
 			INFO("\tData set: ");
 			WARN(dataset << endl);
+			
+			if ((strcasecmp(dataset.c_str(),"ADNI") != 0) && (strcasecmp(dataset.c_str(),"OASIS") != 0))
+			{
+				INFO("\tImage format: ");
+				WARN(imageFormat << endl);
+			}
 			
 			INFO("\tHorizontal histogram bins: ");
 			WARN(histogramHorizontalBins << endl);
@@ -229,50 +241,71 @@ namespace FeatureExtractors
 		
 		const vector<string>& images = extractFramesFromGif(directory);
 		
-		/// Synchronising with gif thread checker. This code must be executed only when the thread has finished is execution.
+		/// Synchronising with GIF thread checker. This code must be executed only when the thread has finished is execution.
 		mutex.lock();
 		mutex.unlock();
 		
 		counter = 0;
+		
+		if ((strcasecmp(dataset.c_str(),"ADNI") != 0) && (strcasecmp(dataset.c_str(),"OASIS") != 0))
+		{
+			if (system((string("find ") + directory + string(" -name features -exec rm -rf {} \\; 2> /dev/null")).c_str()));
+		}
 		
 		for (vector<string>::const_iterator it = images.begin(); it != images.end(); ++it)
 		{
 			stringstream s;
 			string patientPath;
 			
-			patientPath = it->substr(0,it->rfind("/")) + ((strcasecmp(dataset.c_str(),"OASIS") == 0) ? "/" : string("/sections/"));
+			if ((strcasecmp(dataset.c_str(),"ADNI") == 0) || (strcasecmp(dataset.c_str(),"OASIS") == 0))
+			{
+				patientPath = it->substr(0,it->rfind("/")) + ((strcasecmp(dataset.c_str(),"OASIS") == 0) ? "/" : string("/sections/"));
+				
+				if (system((string("rm -rf ") + patientPath + string("../features/keypoints")).c_str()));
+				if (system((string("rm -rf ") + patientPath + string("../features/descriptors")).c_str()));
+			}
+			else patientPath = it->substr(0,it->rfind("/") + 1);
 			
-			if (system((string("rm -rf ") + patientPath + string("../features/keypoints")).c_str()));
-			if (system((string("rm -rf ") + patientPath + string("../features/descriptors")).c_str()));
+			if (system((string("mkdir -p ") + patientPath + (((strcasecmp(dataset.c_str(),"ADNI") == 0) || (strcasecmp(dataset.c_str(),"OASIS") == 0)) ? "../" : "") + string("features/keypoints")).c_str()));
+			if (system((string("mkdir -p ") + patientPath + (((strcasecmp(dataset.c_str(),"ADNI") == 0) || (strcasecmp(dataset.c_str(),"OASIS") == 0)) ? "../" : "") + string("features/descriptors")).c_str()));
 			
-			if (system((string("mkdir -p ") + patientPath + string("../features/keypoints")).c_str()));
-			if (system((string("mkdir -p ") + patientPath + string("../features/descriptors")).c_str()));
-			
-			s << setw(3) << setfill(' ') << Utils::roundN(counter++ / (float) images.size() * 100,0);
+			if (it == (images.end() - 1)) s << "100";
+			else s << setw(3) << setfill(' ') << Utils::roundN(counter++ / (float) images.size() * 100,0);
 			
 			ERR("[" << s.str() << "%] ");
 			INFO("Generating features of '");
 			
 			if (strcasecmp(dataset.c_str(),"OASIS") == 0) WARN(it->substr(0,it->rfind("/")).substr(0,it->substr(0,it->rfind("/")).rfind("/")))
-			else WARN(it->substr(0,it->rfind("/")));
+			else if (strcasecmp(dataset.c_str(),"ADNI") == 0) WARN(it->substr(0,it->rfind("/")))
+			else WARN(*it);
 			
 			INFO("'...");
 			
-			for (vector<string>::const_iterator it2 = sections.begin(); it2 != sections.end(); ++it2)
+			if ((strcasecmp(dataset.c_str(),"ADNI") == 0) || (strcasecmp(dataset.c_str(),"OASIS") == 0))
 			{
-				s.str("");
-				s.clear();
+				for (vector<string>::const_iterator it2 = sections.begin(); it2 != sections.end(); ++it2)
+				{
+					s.str("");
+					s.clear();
+					
+					s << setw(3) << setfill('0') << *it2;
+					
+					const Mat& image = imread(patientPath + string("section_") + s.str() + string(".png"));
+					
+					if (!image.empty()) exec(image,patientPath,string("section_") + s.str() + string(".png"));
+				}
+			}
+			else
+			{
+				const Mat& image = imread(*it);
 				
-				s << setw(3) << setfill('0') << *it2;
-				
-				const Mat& image = imread(patientPath + string("section_") + s.str() + string(".png"));
-				if (!image.empty()) exec(image,patientPath,string("section_") + s.str() + string(".png"));
+				if (!image.empty()) exec(image,patientPath,it->substr(it->rfind("/") + 1));
 			}
 			
 			INFO("done!" << endl);
 		}
 		
-		writeJointCSV(directory);
+		//writeJointCSV(directory);
 	}
 	
 	void ORBFeatureExtractor::exec(const Mat& image, const string& outputDirectory, const string& section)
@@ -282,28 +315,33 @@ namespace FeatureExtractors
 		Mat descriptorsImage, keypointsImage;
 		bool isFeaturesGenerationNeeded;
 		
-		const Mat& descriptor = imread(outputDirectory + string("../features/descriptors/descriptor_") + section);
+		const Mat& descriptor = imread(outputDirectory + (((strcasecmp(dataset.c_str(),"ADNI") == 0) || (strcasecmp(dataset.c_str(),"OASIS") == 0)) ? "../" : "") + string("features/descriptors/descriptor_") + section);
 		
 		/// Checking whether the current maximum number of features is different with respect to the one used to generate the feature's images, if any.
 		if (!descriptor.empty() && descriptor.rows != maxFeatureNumber) isFeaturesGenerationNeeded = true;
 		else isFeaturesGenerationNeeded = false;
 		
-		if (isFeaturesGenerationNeeded || (stat((outputDirectory + string("../features/keypoints/keypoint_") + section).c_str(),&status) != 0) || !S_ISREG(status.st_mode))
+		if (isFeaturesGenerationNeeded ||
+			(stat((outputDirectory + (((strcasecmp(dataset.c_str(),"ADNI") == 0) ||
+									   (strcasecmp(dataset.c_str(),"OASIS") == 0)) ? "../" : "") + string("features/keypoints/keypoint_") + section).c_str(),&status) != 0) || !S_ISREG(status.st_mode))
 		{
 			keypointsImage = extractKeyPoints(image);
 		}
 		
-		if (isFeaturesGenerationNeeded || (stat((outputDirectory + string("../features/descriptors/descriptor_") + section).c_str(),&status) != 0) || !S_ISREG(status.st_mode))
+		if (isFeaturesGenerationNeeded ||
+			(stat((outputDirectory + (((strcasecmp(dataset.c_str(),"ADNI") == 0) ||
+									   (strcasecmp(dataset.c_str(),"OASIS") == 0)) ? "../" : "") + string("features/descriptors/descriptor_") + section).c_str(),&status) != 0) || !S_ISREG(status.st_mode))
 		{
 			descriptorsImage = extractDetectors(image);
 		}
 		
 		if (!keypointsImage.empty() && !descriptorsImage.empty())
 		{
-			imwrite(outputDirectory + string("../features/keypoints/keypoint_") + section,keypointsImage);
-			imwrite(outputDirectory + string("../features/descriptors/descriptor_") + section,descriptorsImage);
+			imwrite(outputDirectory + (((strcasecmp(dataset.c_str(),"ADNI") == 0) || (strcasecmp(dataset.c_str(),"OASIS") == 0)) ? "../" : "") + string("features/keypoints/keypoint_") + section,keypointsImage);
+			imwrite(outputDirectory + (((strcasecmp(dataset.c_str(),"ADNI") == 0) || (strcasecmp(dataset.c_str(),"OASIS") == 0)) ? "../" : "") + string("features/descriptors/descriptor_") + section,descriptorsImage);
 			
-			writeCSV(image,descriptorsImage,outputDirectory + string("../features/descriptors/descriptor_") + section.substr(0,section.find(".png")));
+			writeCSV(image,descriptorsImage,outputDirectory + (((strcasecmp(dataset.c_str(),"ADNI") == 0) || (strcasecmp(dataset.c_str(),"OASIS") == 0)) ? "../" : "") + string("features/descriptors/descriptor_") +
+					 section.substr(0,section.find(".png")));
 		}
 	}
 	
@@ -350,7 +388,7 @@ namespace FeatureExtractors
 				
 				s << setw(3) << setfill('0') << *it;
 				
-				if (system((string("find ") + directory + string(" -wholename */section_") + s.str() + string(".png > .temp")).c_str()));
+				if (system((string("find ") + directory + ((directory.at(directory.size() - 1) == '/') ? string("") : string("/")) + string(" -wholename */section_") + s.str() + string(".png > .temp")).c_str()));
 				
 				imageFiles.open(".temp");
 				
@@ -406,7 +444,7 @@ namespace FeatureExtractors
 			vector<string> wrongSections;
 			unsigned int numberOfWrongSections;
 			
-			if (system((string("find ") + directory + string(" -name *.gif > .temp")).c_str()));
+			if (system((string("find ") + directory + ((directory.at(directory.size() - 1) == '/') ? string("") : string("/")) + string(" -name *.gif > .temp")).c_str()));
 			
 			imageFiles.open(".temp");
 			
@@ -512,6 +550,40 @@ namespace FeatureExtractors
 			}
 			
 			isExtracting = false;
+		}
+		else
+		{
+			if (system((string("find ") + directory + ((directory.at(directory.size() - 1) == '/') ? string("") : string("/")) + string(" -name *.") + imageFormat + string(" > .temp 2> /dev/null")).c_str()));
+			
+			imageFiles.open(".temp");
+			
+			while (imageFiles.good())
+			{
+				if (imageFiles.eof()) break;
+				
+				imageFiles.getline(buffer,4096);
+				
+				if ((strlen(buffer) > 0) && (string(buffer).find("features") == string::npos)) images.push_back(buffer);
+			}
+			
+			imageFiles.close();
+			
+			if (system("rm -rf .temp"));
+			
+			if (images.empty())
+			{
+				string imageFormatUpper;
+				
+				imageFormatUpper = imageFormat;
+				
+				transform(imageFormatUpper.begin(),imageFormatUpper.end(),imageFormatUpper.begin(),::toupper);
+				
+				INFO("No " << imageFormatUpper << " images have been found in '");
+				WARN(directory);
+				INFO("'. Are you sure you set the right image format? Exiting..." << endl);
+				
+				exit(-1);
+			}
 		}
 		
 		return images;

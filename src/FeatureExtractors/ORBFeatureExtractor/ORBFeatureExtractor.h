@@ -51,6 +51,11 @@ namespace FeatureExtractors
 			std::string dataset;
 			
 			/**
+			 * @brief format of the images in the own data set chosen.
+			 */
+			std::string imageFormat;
+			
+			/**
 			 * @brief semaphore used to safely run multiple instances of 'convert'.
 			 */
 			long semaphoreId;
