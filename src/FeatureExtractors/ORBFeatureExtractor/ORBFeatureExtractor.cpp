@@ -305,7 +305,7 @@ namespace FeatureExtractors
 			INFO("done!" << endl);
 		}
 		
-		//writeJointCSV(directory);
+		writeJointCSV(directory);
 	}
 	
 	void ORBFeatureExtractor::exec(const Mat& image, const string& outputDirectory, const string& section)
@@ -388,7 +388,7 @@ namespace FeatureExtractors
 				
 				s << setw(3) << setfill('0') << *it;
 				
-				if (system((string("find ") + directory + ((directory.at(directory.size() - 1) == '/') ? string("") : string("/")) + string(" -wholename */section_") + s.str() + string(".png > .temp")).c_str()));
+				if (system((string("find ") + directory + ((directory.at(directory.size() - 1) == '/') ? string("") : string("/")) + string(" -wholename */section_") + s.str() + string(".png > .temp 2> /dev/null")).c_str()));
 				
 				imageFiles.open(".temp");
 				
@@ -444,7 +444,7 @@ namespace FeatureExtractors
 			vector<string> wrongSections;
 			unsigned int numberOfWrongSections;
 			
-			if (system((string("find ") + directory + ((directory.at(directory.size() - 1) == '/') ? string("") : string("/")) + string(" -name *.gif > .temp")).c_str()));
+			if (system((string("find ") + directory + ((directory.at(directory.size() - 1) == '/') ? string("") : string("/")) + string(" -name *.gif > .temp 2> /dev/null")).c_str()));
 			
 			imageFiles.open(".temp");
 			
@@ -903,37 +903,20 @@ namespace FeatureExtractors
 				}
 			}
 		}
-		
-		for (vector<string>::const_iterator it = classes.begin(); it != classes.end(); ++it)
+		else
 		{
-			csvFiles.clear();
+			vector<string> files;
 			
-			if (system((string("find ") + directory + ((directory.at(directory.size() - 1) == '/') ? string("") : string("/")) + string("ClassPatientFiles/") + string(" -mindepth 1 -maxdepth 1 -name ") + *it +
-						string("_*csv > .temp")).c_str()));
-			
-			file.open(".temp");
-			
-			while (file.good())
+			for (vector<string>::const_iterator it = classes.begin(); it != classes.end(); ++it)
 			{
-				if (file.eof()) break;
+				INFO("Generating matrices for class: ");
+				WARN(*it << endl);
 				
-				file.getline(buffer,65536);
+				if (system((string("find ") + directory + ((directory.at(directory.size() - 1) == '/') ? string("") : string("/")) + *it + string(" -name *.csv > .temp 2> /dev/null")).c_str()));
 				
-				if (strlen(buffer) > 0) csvFiles.push_back(buffer);
-			}
-			
-			file.close();
-			
-			if (system("rm -rf .temp"));
-			
-			for (vector<string>::const_iterator it2 = csvFiles.begin(); it2 != csvFiles.end(); ++it2)
-			{
-				patientsFile.open((*it2 + string(".new")).c_str());
+				file.open(".temp");
 				
-				file.open((*it2).c_str());
-				
-				oldPatient = "";
-				patient = "";
+				files.clear();
 				
 				while (file.good())
 				{
@@ -941,24 +924,112 @@ namespace FeatureExtractors
 					
 					file.getline(buffer,65536);
 					
-					if (strlen(buffer) == 0) break;
-					
-					patient = string(buffer).substr(0,string(buffer).find(","));
-					
-					if (oldPatient != patient)
-					{
-						oldPatient = patient;
-						
-						patientsFile << string(buffer) << endl;
-					}
+					if (strlen(buffer) > 0) files.push_back(buffer);
 				}
 				
 				file.close();
 				
-				patientsFile.close();
+				if (system("rm -rf .temp"));
 				
-				if (system((string("rm -rf ") + *it2).c_str()));
-				if (system((string("mv ") + *it2 + string(".new ") + *it2).c_str()));
+				counter = 0;
+				
+				for (vector<string>::const_iterator it2 = files.begin(); it2 != files.end(); ++it2, ++counter)
+				{
+					if ((files.size() < 10) || (counter % (files.size() / 10)) == 0)
+					{
+						if (((it2 + 1) == files.end()) || ceil(counter + (files.size() / 10)) > files.size()) ERR("100% done." << endl)
+						else ERR(ceil(counter * 100.0 / files.size()) << "% done." << endl)
+					}
+					
+					const Mat& image = imread(it2->substr(0,it2->rfind("csv")) + string("png"));
+					
+					if (image.rows < maxFeatureNumber) continue;
+					
+					file.open(it2->c_str());
+					
+					while (file.good())
+					{
+						if (file.eof()) break;
+						
+						file.getline(buffer,65536);
+						
+						temp = buffer;
+						
+						break;
+					}
+					
+					file.close();
+					
+					patient = it2->substr(it2->rfind("descriptor") + string("descriptor").size() + 1);
+					patient = patient.substr(0,patient.find("."));
+					
+					patientsFile.open((directory + ((directory.at(directory.size() - 1) == '/') ? "" : "/") + string("ClassPatientFiles/") + *it + string(".csv")).c_str(),ios_base::app);
+					
+					patientsFile << patient << "," << temp << "," << *it << endl;
+					
+					patientsFile.close();
+				}
+			}
+		}
+		
+		if ((strcasecmp(dataset.c_str(),"ADNI") == 0) || (strcasecmp(dataset.c_str(),"OASIS") == 0))
+		{
+			for (vector<string>::const_iterator it = classes.begin(); it != classes.end(); ++it)
+			{
+				csvFiles.clear();
+				
+				if (system((string("find ") + directory + ((directory.at(directory.size() - 1) == '/') ? string("") : string("/")) + string("ClassPatientFiles/") + string(" -mindepth 1 -maxdepth 1 -name ") + *it +
+							string("_*csv > .temp 2> /dev/null")).c_str()));
+				
+				file.open(".temp");
+				
+				while (file.good())
+				{
+					if (file.eof()) break;
+					
+					file.getline(buffer,65536);
+					
+					if (strlen(buffer) > 0) csvFiles.push_back(buffer);
+				}
+				
+				file.close();
+				
+				if (system("rm -rf .temp"));
+				
+				for (vector<string>::const_iterator it2 = csvFiles.begin(); it2 != csvFiles.end(); ++it2)
+				{
+					patientsFile.open((*it2 + string(".new")).c_str());
+					
+					file.open((*it2).c_str());
+					
+					oldPatient = "";
+					patient = "";
+					
+					while (file.good())
+					{
+						if (file.eof()) break;
+						
+						file.getline(buffer,65536);
+						
+						if (strlen(buffer) == 0) break;
+						
+						patient = string(buffer).substr(0,string(buffer).find(","));
+						
+						if (oldPatient != patient)
+						{
+							oldPatient = patient;
+							
+							patientsFile << string(buffer) << endl;
+						}
+					}
+					
+					file.close();
+					
+					patientsFile.close();
+					
+					if (system((string("rm -rf ") + *it2).c_str()));
+					if (system((string("mv ") + *it2 + string(".new ") + *it2).c_str()));
+				}
 			}
 		}
 	}
