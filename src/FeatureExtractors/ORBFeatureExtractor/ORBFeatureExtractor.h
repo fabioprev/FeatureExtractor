@@ -145,7 +145,7 @@ namespace FeatureExtractors
 			void writeCSV(const cv::Mat& image, const cv::Mat& descriptorsImage, const std::string& filename);
 			
 			/**
-			 * @brief Function that writes the joint CSV file for each Alzheimer's class.
+			 * @brief Function that writes the joint CSV file for each patient's class.
 			 * 
 			 * @param directory name of the directory which contains the images to be analysed.
 			 */
