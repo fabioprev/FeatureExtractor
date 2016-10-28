@@ -17,7 +17,7 @@ resolved by installing the following packages:
   
   - build-essential
   - cmake
-  - libopencv-dev
+  - libopencv-dev (version 2.4.11)
   - imagemagick
   - libjpeg-dev
 
